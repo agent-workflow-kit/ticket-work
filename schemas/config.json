@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/config",
+  "title": "ticket-work config",
+  "type": "object",
+  "properties": {
+    "hooks": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
