@@ -1,0 +1,1443 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/defs.json",
+  "title": "ticket-work shared definitions",
+  "description": "Not an output on its own. Shared definitions referenced by the CLI, hook, audit, log and artifact schemas. config.json embeds its own copies.",
+  "$defs": {
+    "key": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+$",
+      "maxLength": 64,
+      "description": "Ticket key, printed upper-case."
+    },
+    "site_name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    },
+    "board_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "holder": {
+      "type": "string",
+      "pattern": "^ticket-work:[A-Za-z0-9._-]{1,64}$",
+      "description": "Opaque claim holder ticket-work:<instance>."
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+      "description": "The work item id (interface.md never defines its grammar; see GAPS.md). Opaque; may equal site:KEY."
+    },
+    "requested_keys": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/key"
+      },
+      "uniqueItems": true,
+      "maxItems": 20
+    },
+    "ts": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "description": "UTC ISO 8601 with Z, to the second."
+    },
+    "duration": {
+      "type": "string",
+      "pattern": "^[0-9]{1,6}(ms|s|m|h|d|w)$"
+    },
+    "actor": {
+      "type": "string",
+      "pattern": "^(?:human|auto):[A-Za-z0-9._@-]{1,64}$"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:@/-]{1,128}$"
+    },
+    "decision_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision_id"
+      },
+      "maxItems": 16
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{8,64}$",
+      "description": "Outbox event id; a receiver deduplicates on it."
+    },
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{8,64}$",
+      "description": "Shared by the attempted and outcome records of one write."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pending_id": {
+      "type": "string",
+      "pattern": "^pd-[a-z2-7]{8}$"
+    },
+    "repo_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:/#@+=,-]{1,256}$",
+      "description": "Opaque repository id (never the display string)."
+    },
+    "pr_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Opaque pull request id (never the display string)."
+    },
+    "pr_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "Display form: a URL or host/<full project path>#N."
+    },
+    "branch_name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/@+-]{1,255}$"
+    },
+    "status_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "hook_name": {
+      "enum": [
+        "pre-enqueue",
+        "pre-transition",
+        "pre-launch",
+        "post-link",
+        "post-status",
+        "post-start-failed",
+        "post-pending",
+        "post-attention"
+      ]
+    },
+    "phase": {
+      "enum": [
+        "pending",
+        "starting",
+        "working",
+        "in_review",
+        "merged",
+        "stopped",
+        "failed"
+      ]
+    },
+    "attention_reason": {
+      "enum": [
+        "restore_failed",
+        "pr_idle",
+        "superseded",
+        "ticket_diverged",
+        "candidate_link",
+        "teardown_refused",
+        "agent_blocked",
+        "agent_failed",
+        "job_held",
+        "pending_expired",
+        "sync_failed",
+        "sprint_failed",
+        "claim_lost",
+        "agent_missing"
+      ]
+    },
+    "event_name": {
+      "enum": [
+        "started",
+        "pr_opened",
+        "pr_ready",
+        "pr_merged",
+        "pr_closed_unmerged",
+        "agent_blocked",
+        "agent_failed",
+        "stopped"
+      ]
+    },
+    "event_name_ext": {
+      "enum": [
+        "started",
+        "pr_opened",
+        "pr_ready",
+        "pr_merged",
+        "pr_closed_unmerged",
+        "agent_blocked",
+        "agent_failed",
+        "stopped",
+        "pr_merged_partial"
+      ],
+      "description": "Status-map events plus pr_merged_partial (post-status only; no rule applies)."
+    },
+    "event_outcome": {
+      "enum": [
+        "applied",
+        "pending",
+        "skipped",
+        "declined"
+      ]
+    },
+    "tier": {
+      "enum": [
+        "claimed",
+        "branch",
+        "title",
+        "manual"
+      ]
+    },
+    "link_state": {
+      "enum": [
+        "linked",
+        "candidate",
+        "ignored",
+        "missing"
+      ]
+    },
+    "pending_action": {
+      "enum": [
+        "start",
+        "transition",
+        "comment",
+        "launch",
+        "stop"
+      ]
+    },
+    "pending_status": {
+      "enum": [
+        "open",
+        "confirmed",
+        "rejected",
+        "expired"
+      ]
+    },
+    "confirm": {
+      "enum": [
+        "ask",
+        "auto",
+        "never"
+      ]
+    },
+    "step_kind": {
+      "enum": [
+        "assign",
+        "transition",
+        "sprint_add",
+        "sprint_remove",
+        "comment",
+        "update"
+      ]
+    },
+    "step_status": {
+      "enum": [
+        "applied",
+        "unchanged",
+        "skipped",
+        "failed",
+        "planned"
+      ]
+    },
+    "agent_attention": {
+      "enum": [
+        "blocked",
+        "escalated",
+        "failed",
+        "timeout",
+        "lost",
+        "unreported"
+      ]
+    },
+    "tool_name": {
+      "enum": [
+        "ticketctl",
+        "ticket-queue",
+        "forgectl",
+        "agent-spawn",
+        "jobsctl",
+        "wtctl"
+      ]
+    },
+    "error_code": {
+      "enum": [
+        "internal",
+        "invalid_argument",
+        "not_found",
+        "hook_vetoed",
+        "lower_failed",
+        "tool_missing",
+        "tool_too_old",
+        "partial_results",
+        "repo_unresolved",
+        "schema_newer",
+        "refused",
+        "ambiguous_key"
+      ],
+      "description": "Closed class per exit: 1 internal; 2 invalid_argument; 10 not_found; 11 hook_vetoed; 12 lower_failed, tool_missing, tool_too_old, partial_results, repo_unresolved, schema_newer; 20 refused; 21 ambiguous_key."
+    },
+    "error_reason": {
+      "enum": [
+        "live",
+        "precondition_failed",
+        "unmapped",
+        "already_started",
+        "not_active",
+        "claimed",
+        "not_in_pool",
+        "claim_lost",
+        "declined",
+        "expired",
+        "not_pending",
+        "stale_plan",
+        "not_linkable",
+        "already_linked",
+        "holder_mismatch",
+        "human_only",
+        "invalid_combination",
+        "stdin_conflict",
+        "invalid_config"
+      ]
+    },
+    "nothing_reason": {
+      "enum": [
+        "empty",
+        "no_capacity",
+        "pending_exists"
+      ]
+    },
+    "claim_state": {
+      "enum": [
+        "ok",
+        "done",
+        "gone",
+        "reassigned",
+        "moved"
+      ]
+    },
+    "teardown_state": {
+      "enum": [
+        "not_needed",
+        "pending",
+        "done",
+        "refused"
+      ]
+    },
+    "cleanup_claim": {
+      "enum": [
+        "held",
+        "released"
+      ]
+    },
+    "restore_state": {
+      "enum": [
+        "none",
+        "done",
+        "failed"
+      ]
+    },
+    "warning": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1024,
+          "x-untrusted": true
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code"
+      ],
+      "description": "warning codes are not enumerated by interface.md (GAPS.md)."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      },
+      "maxItems": 64
+    },
+    "lower_error": {
+      "type": "object",
+      "description": "The lower tool's whole error object, verbatim and untrusted.",
+      "x-untrusted": true
+    },
+    "error_body": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/error_code"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 4096,
+          "x-untrusted": true
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/error_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "details": {
+          "type": "object",
+          "description": "Open object. Known keys: candidates (ambiguous_key), rules, current_status (precondition_failed), why (not_linkable), errors (partial_results), problems (validate), lower_error, status (torn_down)."
+        },
+        "tool": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/tool_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lower_code": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 64,
+              "x-untrusted": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lower_error": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/lower_error"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hook": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hook_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hook_stderr": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 65536,
+              "x-untrusted": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decision_ids": {
+          "$ref": "#/$defs/decision_ids"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "reason",
+        "details",
+        "tool",
+        "lower_code",
+        "lower_error",
+        "hook",
+        "hook_stderr",
+        "decision_ids"
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "properties": {
+        "expires_at": {
+          "$ref": "#/$defs/ts"
+        },
+        "renewed_at": {
+          "$ref": "#/$defs/ts"
+        },
+        "state": {
+          "$ref": "#/$defs/claim_state"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "expires_at",
+        "renewed_at",
+        "state"
+      ],
+      "description": "The claim as stored on the work item."
+    },
+    "link_facts": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "open",
+            "closed",
+            "merged"
+          ]
+        },
+        "draft": {
+          "type": "boolean"
+        },
+        "head_sha": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{7,64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "merged_head_sha": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{7,64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ts"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "draft",
+        "head_sha",
+        "merged_head_sha",
+        "updated_at"
+      ],
+      "description": "Last-seen pull request facts."
+    },
+    "link": {
+      "type": "object",
+      "properties": {
+        "pr_id": {
+          "$ref": "#/$defs/pr_id"
+        },
+        "repo_id": {
+          "$ref": "#/$defs/repo_id"
+        },
+        "pr": {
+          "$ref": "#/$defs/pr_ref"
+        },
+        "tier": {
+          "$ref": "#/$defs/tier"
+        },
+        "state": {
+          "$ref": "#/$defs/link_state"
+        },
+        "facts": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/link_facts"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "linked_at": {
+          "$ref": "#/$defs/ts"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "pr_id",
+        "repo_id",
+        "pr",
+        "tier",
+        "state",
+        "facts",
+        "linked_at"
+      ]
+    },
+    "job_ref": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status"
+      ],
+      "description": "jobsctl job id and status (jobsctl's own enum)."
+    },
+    "agent_ref": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "needs_attention": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/agent_attention"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "needs_attention"
+      ]
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "teardown": {
+          "$ref": "#/$defs/teardown_state"
+        },
+        "claim": {
+          "$ref": "#/$defs/cleanup_claim"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "teardown",
+        "claim"
+      ]
+    },
+    "previous": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/status_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sprint_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxItems": 64
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "assignee",
+        "sprint_ids"
+      ],
+      "description": "Recorded before the start applies anything; used by the restore flow."
+    },
+    "last_report": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 65536,
+          "x-untrusted": true
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "summary"
+      ]
+    },
+    "work_summary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/work_id"
+        },
+        "site": {
+          "$ref": "#/$defs/site_name"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "board": {
+          "$ref": "#/$defs/board_name"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 1024,
+          "x-untrusted": true
+        },
+        "phase": {
+          "$ref": "#/$defs/phase"
+        },
+        "needs_attention": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attention_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attention_detail": {
+          "oneOf": [
+            {
+              "type": "object",
+              "x-untrusted": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repo": {
+          "$ref": "#/$defs/repo_id"
+        },
+        "branch": {
+          "$ref": "#/$defs/branch_name"
+        },
+        "job": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/job_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/agent_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pending": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pending_id"
+          },
+          "maxItems": 64
+        },
+        "created": {
+          "$ref": "#/$defs/ts"
+        },
+        "updated": {
+          "$ref": "#/$defs/ts"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "site",
+        "key",
+        "board",
+        "title",
+        "phase",
+        "needs_attention",
+        "attention_detail",
+        "repo",
+        "branch",
+        "job",
+        "agent",
+        "pending",
+        "created",
+        "updated"
+      ],
+      "description": "One row of list --json (the summary shape is not defined by interface.md; see GAPS.md)."
+    },
+    "work_item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/work_id"
+        },
+        "site": {
+          "$ref": "#/$defs/site_name"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "requested_keys": {
+          "$ref": "#/$defs/requested_keys"
+        },
+        "board": {
+          "$ref": "#/$defs/board_name"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 1024,
+          "x-untrusted": true
+        },
+        "phase": {
+          "$ref": "#/$defs/phase"
+        },
+        "needs_attention": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attention_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attention_detail": {
+          "oneOf": [
+            {
+              "type": "object",
+              "x-untrusted": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repo": {
+          "$ref": "#/$defs/repo_id"
+        },
+        "branch": {
+          "$ref": "#/$defs/branch_name"
+        },
+        "base": {
+          "$ref": "#/$defs/branch_name"
+        },
+        "holder": {
+          "$ref": "#/$defs/holder"
+        },
+        "claim": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/claim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/previous"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "started_status": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/status_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "job": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/job_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/agent_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          },
+          "maxItems": 100
+        },
+        "pending": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pending_id"
+          },
+          "maxItems": 64
+        },
+        "cleanup": {
+          "$ref": "#/$defs/cleanup"
+        },
+        "restore_state": {
+          "$ref": "#/$defs/restore_state"
+        },
+        "last_report": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/last_report"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created": {
+          "$ref": "#/$defs/ts"
+        },
+        "updated": {
+          "$ref": "#/$defs/ts"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "site",
+        "key",
+        "requested_keys",
+        "board",
+        "title",
+        "phase",
+        "needs_attention",
+        "attention_detail",
+        "repo",
+        "branch",
+        "base",
+        "holder",
+        "claim",
+        "previous",
+        "started_status",
+        "job",
+        "agent",
+        "links",
+        "pending",
+        "cleanup",
+        "restore_state",
+        "last_report",
+        "created",
+        "updated"
+      ]
+    },
+    "plan": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "transition",
+            "sprint_add",
+            "comment"
+          ]
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step_kind"
+          },
+          "maxItems": 16
+        },
+        "current_status": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/status_name",
+              "x-untrusted": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_status": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/status_name",
+              "x-untrusted": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 64
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "steps",
+        "current_status",
+        "target_status",
+        "plan_sha256"
+      ],
+      "description": "One ticketctl write plan (a dry-run). changes is the ticketctl dry-run change list, carried verbatim and optional in hooks."
+    },
+    "start_plans": {
+      "type": "object",
+      "properties": {
+        "transition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sprint": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "transition",
+        "sprint"
+      ],
+      "description": "The two Start order step 7 plans."
+    },
+    "applied_step": {
+      "type": "object",
+      "properties": {
+        "step": {
+          "$ref": "#/$defs/step_kind"
+        },
+        "status": {
+          "$ref": "#/$defs/step_status"
+        },
+        "attempt_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attempt_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "status"
+      ]
+    },
+    "plan_hashes": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z_]{1,32}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/sha256"
+      },
+      "description": "Map of step name to plan hash."
+    },
+    "pending_record": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/pending_id"
+        },
+        "tool": {
+          "const": "ticket-work"
+        },
+        "action": {
+          "$ref": "#/$defs/pending_action"
+        },
+        "target": {
+          "$ref": "#/$defs/work_id"
+        },
+        "created": {
+          "$ref": "#/$defs/ts"
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "Trusted text built by ticket-work; never ticket text."
+        },
+        "expires": {
+          "$ref": "#/$defs/ts"
+        },
+        "actor": {
+          "$ref": "#/$defs/actor"
+        },
+        "plan_sha256": {
+          "$ref": "#/$defs/plan_hashes"
+        },
+        "rule": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z_]{1,64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/event_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "escalated_by": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hook_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/pending_status"
+        },
+        "details": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tool",
+        "action",
+        "target",
+        "created",
+        "summary",
+        "expires",
+        "actor",
+        "plan_sha256",
+        "rule",
+        "event",
+        "escalated_by",
+        "status",
+        "details"
+      ]
+    },
+    "work_event": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/$defs/event_name_ext"
+        },
+        "event_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome": {
+          "$ref": "#/$defs/event_outcome"
+        },
+        "ts": {
+          "$ref": "#/$defs/ts"
+        },
+        "rule": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z_]{1,64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pending_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/pending_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "event_key",
+        "outcome",
+        "ts",
+        "rule",
+        "pending_id"
+      ]
+    },
+    "sync_error": {
+      "type": "object",
+      "properties": {
+        "work_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/work_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "step": {
+          "enum": [
+            "lease",
+            "claims",
+            "jobs",
+            "agents",
+            "discovery",
+            "read",
+            "stale",
+            "rules",
+            "cleanup",
+            "hooks"
+          ]
+        },
+        "code": {
+          "$ref": "#/$defs/error_code"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 4096,
+          "x-untrusted": true
+        },
+        "tool": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/tool_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lower_error": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/lower_error"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "code",
+        "message"
+      ]
+    },
+    "sync_event": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/$defs/event_name_ext"
+        },
+        "event_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome": {
+          "$ref": "#/$defs/event_outcome"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "event_key",
+        "outcome"
+      ]
+    },
+    "sync_item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/work_id"
+        },
+        "phase": {
+          "$ref": "#/$defs/phase"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sync_event"
+          },
+          "maxItems": 64
+        },
+        "applied": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/applied_step"
+          },
+          "maxItems": 64
+        },
+        "pending": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pending_id"
+          },
+          "maxItems": 64
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sync_error"
+          },
+          "maxItems": 64
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "phase",
+        "events",
+        "applied",
+        "pending",
+        "errors"
+      ]
+    },
+    "problem": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1024,
+          "x-untrusted": true
+        },
+        "board": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/board_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tool": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/tool_name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(ticket|owner|board)=[A-Za-z0-9._:/#@+=,-]{1,256}$"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "ticket=<KEY>, owner=ticket-work, board=<name>."
+    }
+  }
+}

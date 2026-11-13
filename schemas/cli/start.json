@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/start.json",
+  "title": "start --json",
+  "description": "Exit 0 and 13: the start result (pending set on 13); exit 22: the nothing_to_start object; refusals print the error envelope.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "work": {
+          "oneOf": [
+            {
+              "$ref": "../defs.json#/$defs/work_item"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claim": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plans": {
+          "oneOf": [
+            {
+              "$ref": "../defs.json#/$defs/start_plans"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applied": {
+          "type": "array",
+          "items": {
+            "$ref": "../defs.json#/$defs/applied_step"
+          },
+          "maxItems": 64
+        },
+        "pending": {
+          "oneOf": [
+            {
+              "$ref": "../defs.json#/$defs/pending_record"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "job": {
+          "oneOf": [
+            {
+              "$ref": "../defs.json#/$defs/job_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "warnings": {
+          "$ref": "../defs.json#/$defs/warnings"
+        },
+        "dry_run": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "work",
+        "claim",
+        "plans",
+        "applied",
+        "pending",
+        "job",
+        "warnings",
+        "dry_run"
+      ],
+      "description": "Start result object. work and job are null for a dry run or a pending start; claim is the ticket-queue claim object, verbatim."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "nothing_to_start": {
+          "const": true
+        },
+        "reason": {
+          "$ref": "../defs.json#/$defs/nothing_reason"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "nothing_to_start",
+        "reason"
+      ],
+      "description": "Exit 22 output (interface.md says only 'the command's object'; see GAPS.md)."
+    }
+  ]
+}

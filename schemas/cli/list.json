@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/list.json",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/work_summary"
+      }
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "count"
+  ],
+  "description": "Ordered by updated descending.",
+  "title": "list --json"
+}

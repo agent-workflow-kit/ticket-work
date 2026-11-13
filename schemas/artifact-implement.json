@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/artifact-implement.json",
+  "title": "implement-ticket artifact",
+  "description": "The artifact the implement-ticket skill writes for a `done` report (interface.md, Slot contract). Validated strictly by ticket-work; prs and branch are claims, summary is untrusted.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "ticket": {
+      "$ref": "defs.json#/$defs/key"
+    },
+    "branch": {
+      "$ref": "defs.json#/$defs/branch_name"
+    },
+    "prs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^https?://[^\\s]+$"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "url"
+        ]
+      },
+      "maxItems": 20
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 65536,
+      "x-untrusted": true
+    },
+    "skill_marker": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "run_token": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16,128}$"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ticket",
+    "branch",
+    "prs",
+    "summary",
+    "skill_marker",
+    "run_token"
+  ]
+}

@@ -28,9 +28,9 @@ It must work fully standalone at a terminal: it never depends on the harness (`a
 
 ## Workflow
 
-1. Start with a design session that resolves the open topics in `docs/design.md` and records decisions there.
-2. Write `docs/interface.md` and `schemas/`.
-3. Implement test-first.
+1. The design is done: `docs/interface.md` is the single normative source for the rules, `docs/design.md` records the decisions and live-verification results, `docs/plan.md` holds the staged plan. Read them before changing anything; a change to behavior starts in `docs/interface.md` and `schemas/`.
+2. Implement test-first, following the stages in `docs/plan.md`.
+3. Keep every spike result that a rule relies on as a regression test (see the test strategy in `docs/design.md`).
 
 ## Repository workflow
 

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/hooks/post-start-failed.json",
+  "title": "post-start-failed hook payload (stdin)",
+  "description": "post- hook payload (stdin): delivered at least once through the outbox; deduplicate on event_id; failure is never fatal. No ticket, pull request or model text. Consumers tolerate unknown keys.",
+  "type": "object",
+  "properties": {
+    "tool": {
+      "const": "ticket-work"
+    },
+    "hook": {
+      "const": "post-start-failed"
+    },
+    "event_id": {
+      "$ref": "../defs.json#/$defs/event_id"
+    },
+    "object_type": {
+      "const": "work"
+    },
+    "object_id": {
+      "$ref": "../defs.json#/$defs/work_id"
+    },
+    "repo": {
+      "$ref": "../defs.json#/$defs/repo_id"
+    },
+    "labels": {
+      "$ref": "../defs.json#/$defs/labels"
+    },
+    "board": {
+      "$ref": "../defs.json#/$defs/board_name"
+    },
+    "site": {
+      "$ref": "../defs.json#/$defs/site_name"
+    },
+    "key": {
+      "$ref": "../defs.json#/$defs/key"
+    },
+    "phase": {
+      "$ref": "../defs.json#/$defs/phase"
+    },
+    "actor": {
+      "$ref": "../defs.json#/$defs/actor"
+    },
+    "reason": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "restore_state": {
+      "$ref": "../defs.json#/$defs/restore_state"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "tool",
+    "hook",
+    "event_id",
+    "object_type",
+    "object_id",
+    "repo",
+    "labels",
+    "board",
+    "site",
+    "key",
+    "phase",
+    "actor",
+    "reason",
+    "restore_state"
+  ]
+}

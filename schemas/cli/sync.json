@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/sync.json",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/sync_item"
+      }
+    },
+    "claims_released": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "already_running": {
+      "type": "boolean"
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/sync_error"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "claims_released",
+    "already_running",
+    "partial",
+    "errors"
+  ],
+  "description": "Sync report.",
+  "title": "sync --json"
+}

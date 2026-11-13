@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/reject.json",
+  "type": "object",
+  "properties": {
+    "pending": {
+      "$ref": "../defs.json#/$defs/pending_record"
+    },
+    "work": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/work_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "claim_released": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "pending",
+    "work",
+    "claim_released"
+  ],
+  "description": "Output shape absent from interface.md (GAPS.md).",
+  "title": "reject --json"
+}

@@ -1,52 +1,69 @@
 # ticket-work
 
-Own the lifecycle of a worked ticket: claim, transition, launch an implement agent, link the PR, and follow it to done.
+Own the lifecycle of a worked ticket: claim it, apply the board's start changes after a confirmation, launch an implement agent in its own worktree, link the agent's pull requests to the ticket, apply a per-board status map as they move, and tear the work down after the merge.
 
 ## Status
 
-Pre-design: interface not yet specified; see docs/design.md.
+Designed (interface 0.1.0-design); not yet implemented. The normative rules are in [`docs/interface.md`](docs/interface.md).
 
 ## Layer
 
-L3 (workflow)
+L3 (workflow). A skill-wrapper tool for the `implement-ticket` slot. It works standalone at a terminal and from cron.
 
 ## What it does
 
-- `start` claims the next ranked ticket (or a given key) from ticket-queue, confirms assignment, sprint and transition (from a TTY, or as a pending confirmation), and enqueues a job.
-- The job launches an interactive implement agent (kind `implement`) in a new worktree via agent-spawn, labeled with the ticket.
-- `sync` renews claims, links PRs to tickets, adds watches and labels, writes audit entries and applies a per-board status map to PR and agent events.
-- `stop` releases the claim without ending a live session; teardown is separate.
-- Organization rules are per-board preconditions in config; fully standalone via cron.
+- `start` claims the next ranked ticket (or a given key) from ticket-queue, checks the board's preconditions, shows and confirms the assignment, sprint and status change (or records a pending confirmation when no human is present), and enqueues a job.
+- The job launches an interactive implement agent (kind `implement`) in a new worktree through agent-spawn, labeled with the ticket. The agent opens a draft pull request itself.
+- `sync` renews claims, finds and links the ticket's pull requests (with a recorded evidence tier), derives events from their state and applies the board's status map, tears the work down after the merge and releases the claim.
+- `resume`, `stop`, `link` and `unlink` steer a work item; `pending`, `confirm` and `reject` handle confirmations.
+- Organization rules (status names, resolutions, "needs an estimate to start") live in the user's config as per-board status maps and preconditions. Nothing organization-specific ships in this repository.
 
-## Indicative commands
-
-Indicative, finalized in `docs/interface.md`.
+## Commands
 
 ```text
-ticket-work start [KEY] [--auto] [--skill ...] [--mode ...]
-ticket-work sync
-ticket-work list
-ticket-work stop <KEY>
-ticket-work pending
-ticket-work confirm <id>
-ticket-work reject <id>
+ticket-work start [KEY] [--auto] [--board B] [--skill S] [--mode M] [--sandbox L] [--dry-run]
+ticket-work resume KEY [--mode M] [--prompt-file F]
+ticket-work sync [KEY]
+ticket-work list | show KEY
+ticket-work stop KEY
+ticket-work link KEY PR | unlink KEY PR
+ticket-work pending | confirm ID | reject ID
+ticket-work cron install|uninstall | export | prune | validate
 ```
+
+Every command that outputs data supports `--json`. The full surface, exit codes and the order of each flow are in the interface document.
+
+## Safe defaults
+
+Starting a ticket is manual. Ticket status changes are shown and confirmed (a non-interactive run records a pending confirmation). Staleness never moves a ticket or removes a worktree. The agent opens draft pull requests only. The implement agent runs as a trusted session with the sandbox off by default; every safety setting is a config key.
 
 ## Dependencies
 
-- `ticketctl` (ticket reads and transitions); binding: TBD (A/B/C), decided in this tool's design session
-- `ticket-queue` (next/claim/release); binding: TBD (A/B/C), decided in this tool's design session
-- `forgectl` (PR state and linking); binding: TBD (A/B/C), decided in this tool's design session
-- `pr-watch` (PR watches and early event detection); binding: TBD (A/B/C), decided in this tool's design session
-- `agent-spawn` (launches and labels implement agents; teardown); binding: TBD (A/B/C), decided in this tool's design session
-- `wtctl` (repo resolution and worktrees); binding: TBD (A/B/C), decided in this tool's design session
-- `jobsctl` (ticket job queue and capacity); binding: TBD (A/B/C), decided in this tool's design session
+| Tool | Binding | Role | Install |
+|---|---|---|---|
+| ticketctl | A (hard) | ticket reads and writes | `uv tool install git+https://github.com/agent-workflow-kit/ticketctl` |
+| ticket-queue | A (hard) | which ticket next; claims | `uv tool install git+https://github.com/agent-workflow-kit/ticket-queue` |
+| forgectl | A (hard) | pull request discovery and state | `uv tool install git+https://github.com/agent-workflow-kit/forgectl` |
+| agent-spawn | A (hard) | launches, resumes and tears down agents | `uv tool install git+https://github.com/agent-workflow-kit/agent-spawn` |
+| wtctl | A (hard) | repository check before a start | `uv tool install git+https://github.com/agent-workflow-kit/wtctl` |
+| jobsctl | A (optional) | the `tickets` job queue | `uv tool install git+https://github.com/agent-workflow-kit/jobsctl` |
+| pr-watch | A (optional) | early-detection trigger | `uv tool install git+https://github.com/agent-workflow-kit/pr-watch` |
+
+A missing required tool is a clear error naming its install command.
 
 ## Install
 
 ```sh
 uv tool install git+https://github.com/agent-workflow-kit/ticket-work
 ```
+
+## Configuration
+
+`~/.config/ticket-work/config.yaml` plus `config.d/*.yaml`; see `config.example.yaml` for every key. State lives under `~/.local/state/ticket-work/`. ticket-work holds no credentials: each sibling tool reads its own, and a job receives the variable names listed in `jobs.pass_env` from jobsctl's env file.
+
+## Exit codes
+
+Reserved codes follow the design guide (0, 1, 2, 10 to 13, 14 to 18, 20, 21). Tool-specific: 22 means `start` found nothing to start (reasons `empty`, `no_capacity`, `pending_exists`). Refusal reasons are listed in the interface.
 
 ## Documentation
 
@@ -57,4 +74,4 @@ uv tool install git+https://github.com/agent-workflow-kit/ticket-work
 
 ## License
 
-MIT — see LICENSE.
+MIT, see LICENSE.

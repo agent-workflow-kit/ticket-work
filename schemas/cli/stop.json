@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/stop.json",
+  "type": "object",
+  "properties": {
+    "work": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/work_item"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "stopped": {
+      "type": "boolean"
+    },
+    "applied": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/applied_step"
+      },
+      "maxItems": 16
+    },
+    "pending": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/pending_record"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "claim_released": {
+      "type": "boolean"
+    },
+    "dry_run": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "work",
+    "stopped",
+    "applied",
+    "pending",
+    "claim_released",
+    "dry_run"
+  ],
+  "description": "Output shape absent from interface.md (GAPS.md).",
+  "title": "stop --json"
+}

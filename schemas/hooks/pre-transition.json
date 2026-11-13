@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/hooks/pre-transition.json",
+  "title": "pre-transition hook payload (stdin)",
+  "description": "pre- hook payload (stdin): exit 0 continues, exit 13 escalates, any other non-zero vetoes. No ticket, pull request or model text. Consumers tolerate unknown keys.",
+  "type": "object",
+  "properties": {
+    "tool": {
+      "const": "ticket-work"
+    },
+    "hook": {
+      "const": "pre-transition"
+    },
+    "object_type": {
+      "const": "work"
+    },
+    "object_id": {
+      "$ref": "../defs.json#/$defs/work_id"
+    },
+    "repo": {
+      "$ref": "../defs.json#/$defs/repo_id"
+    },
+    "labels": {
+      "$ref": "../defs.json#/$defs/labels"
+    },
+    "board": {
+      "$ref": "../defs.json#/$defs/board_name"
+    },
+    "site": {
+      "$ref": "../defs.json#/$defs/site_name"
+    },
+    "key": {
+      "$ref": "../defs.json#/$defs/key"
+    },
+    "phase": {
+      "$ref": "../defs.json#/$defs/phase"
+    },
+    "actor": {
+      "$ref": "../defs.json#/$defs/actor"
+    },
+    "event": {
+      "$ref": "../defs.json#/$defs/event_name"
+    },
+    "rule": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z_]{1,64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "plan": {
+      "$ref": "../defs.json#/$defs/plan"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "tool",
+    "hook",
+    "object_type",
+    "object_id",
+    "repo",
+    "labels",
+    "board",
+    "site",
+    "key",
+    "phase",
+    "actor",
+    "event",
+    "rule",
+    "plan"
+  ]
+}

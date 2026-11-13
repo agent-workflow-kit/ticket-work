@@ -1,12 +1,915 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "ticket-work/config",
+  "$id": "ticket-work/config.json",
   "title": "ticket-work config",
+  "description": "Config file (config.yaml plus config.d drop-ins merged). Self-contained: no external $ref. Environment variables can set scalars only (TICKET_WORK_<KEY>, nested keys joined with __). Structured config (boards, hooks, rules) cannot come from the environment.",
   "type": "object",
-  "properties": {
-    "hooks": {
-      "type": "object"
+  "additionalProperties": false,
+  "$defs": {
+    "duration": {
+      "type": "string",
+      "pattern": "^[0-9]{1,6}(ms|s|m|h|d|w)$"
+    },
+    "site_name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    },
+    "board_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "confirm": {
+      "enum": [
+        "ask",
+        "auto",
+        "never"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,64}$"
+    },
+    "rule_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$"
+    },
+    "status_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "hook_entry": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "timeout": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 600
+            },
+            {
+              "$ref": "#/$defs/duration"
+            }
+          ],
+          "default": 30
+        },
+        "async": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "cmd"
+      ]
+    },
+    "hook_list": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hook_entry"
+      },
+      "default": []
+    },
+    "rule": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "$ref": "#/$defs/status_name"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/status_name"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "confirm": {
+          "$ref": "#/$defs/confirm"
+        },
+        "comment": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "to"
+      ]
+    },
+    "rule_started": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "$ref": "#/$defs/status_name"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/status_name"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "confirm": {
+          "$ref": "#/$defs/confirm"
+        },
+        "comment": {
+          "type": "boolean",
+          "default": false
+        },
+        "assign": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "me, none or an account id."
+        },
+        "sprint": {
+          "oneOf": [
+            {
+              "enum": [
+                "open",
+                "next"
+              ]
+            },
+            {
+              "type": "integer",
+              "minimum": 1
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "to",
+        "from"
+      ]
+    },
+    "status_map": {
+      "type": "object",
+      "properties": {
+        "started": {
+          "$ref": "#/$defs/rule_started"
+        },
+        "pr_opened": {
+          "$ref": "#/$defs/rule"
+        },
+        "pr_ready": {
+          "$ref": "#/$defs/rule"
+        },
+        "pr_merged": {
+          "$ref": "#/$defs/rule"
+        },
+        "pr_closed_unmerged": {
+          "$ref": "#/$defs/rule"
+        },
+        "agent_blocked": {
+          "$ref": "#/$defs/rule"
+        },
+        "agent_failed": {
+          "$ref": "#/$defs/rule"
+        },
+        "stopped": {
+          "$ref": "#/$defs/rule"
+        }
+      },
+      "additionalProperties": false,
+      "required": [],
+      "default": {}
+    },
+    "repo_rule": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "type": "object",
+          "properties": {
+            "component": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "project": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "epic": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "issue_type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "additionalProperties": false,
+          "required": []
+        },
+        "repo": {
+          "$ref": "#/$defs/rule_repo_id"
+        },
+        "base": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/@+-]{1,255}$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "match",
+        "repo",
+        "base"
+      ]
+    },
+    "rule_repo_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:/#@+=,-]{1,256}$",
+      "description": "Opaque repository id (never the display string)."
+    },
+    "precondition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "has_estimate"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "not_blocked"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "has_parent"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "status_in"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/status_name"
+              },
+              "minItems": 1,
+              "maxItems": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "values"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "labels_absent"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "minItems": 1,
+              "maxItems": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "values"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "assignee"
+            },
+            "value": {
+              "enum": [
+                "me",
+                "none",
+                "any"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "in_sprint"
+            },
+            "value": {
+              "enum": [
+                "open",
+                "any"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "value"
+          ]
+        }
+      ]
+    },
+    "board": {
+      "type": "object",
+      "properties": {
+        "site": {
+          "$ref": "#/$defs/site_name"
+        },
+        "repos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/repo_rule"
+          },
+          "minItems": 1,
+          "maxItems": 256
+        },
+        "branch": {
+          "type": "object",
+          "properties": {
+            "types": {
+              "type": "object",
+              "properties": {
+                "default": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,19}$",
+                  "default": "feat"
+                }
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,19}$"
+              },
+              "default": {
+                "default": "feat"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": []
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/precondition"
+          },
+          "default": [],
+          "maxItems": 64
+        },
+        "status_map": {
+          "$ref": "#/$defs/status_map"
+        },
+        "link_comment": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "site",
+        "repos"
+      ]
     }
   },
-  "additionalProperties": true
+  "properties": {
+    "me": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/name"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "instance": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,64}$",
+      "description": "Default: the sanitized hostname."
+    },
+    "boards": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/board_name"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/board"
+      },
+      "default": {}
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "confirm": {
+          "$ref": "#/$defs/confirm",
+          "default": "ask"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "start": {
+      "type": "object",
+      "properties": {
+        "max_pending": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "pending": {
+      "type": "object",
+      "properties": {
+        "start_expiry": {
+          "$ref": "#/$defs/duration",
+          "default": "24h"
+        },
+        "expiry": {
+          "$ref": "#/$defs/duration",
+          "default": "7d"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "claim": {
+      "type": "object",
+      "properties": {
+        "ttl": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renew_below": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "orphan_after": {
+          "$ref": "#/$defs/duration",
+          "default": "15m"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "overlap": {
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "reread_open_after": {
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "pr_idle_after": {
+          "$ref": "#/$defs/duration",
+          "default": "14d"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "pr_watch": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "agent": {
+      "type": "object",
+      "properties": {
+        "skill": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "ticket-work:implement-ticket"
+        },
+        "mode": {
+          "enum": [
+            "interactive",
+            "headless"
+          ],
+          "default": "interactive"
+        },
+        "sandbox": {
+          "enum": [
+            "off",
+            "preferred",
+            "required"
+          ],
+          "default": "off"
+        },
+        "permission_profile": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "setting_sources": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "user",
+              "project",
+              "local"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [
+            "project"
+          ]
+        },
+        "env_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+          },
+          "default": []
+        },
+        "plugin_dirs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "default": []
+        },
+        "model": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "jobs": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "queue": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+          "default": "tickets"
+        },
+        "pass_env": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+          },
+          "default": []
+        },
+        "kill_grace": {
+          "$ref": "#/$defs/duration",
+          "default": "120s"
+        },
+        "max_running": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "teardown": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "restore_on_failure": {
+      "type": "boolean",
+      "default": true
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "work": {
+          "$ref": "#/$defs/duration",
+          "default": "90d"
+        },
+        "pending": {
+          "$ref": "#/$defs/duration",
+          "default": "30d"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "pre-enqueue": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "pre-transition": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "pre-launch": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-link": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-status": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-start-failed": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-pending": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-attention": {
+          "$ref": "#/$defs/hook_list"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "ticketctl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "ticket-queue": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "forgectl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "agent-spawn": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "jobsctl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "wtctl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "pr-watch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "repos": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/rule_repo_id"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "object",
+            "properties": {
+              "skill": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "default": "ticket-work:implement-ticket"
+              },
+              "mode": {
+                "enum": [
+                  "interactive",
+                  "headless"
+                ],
+                "default": "interactive"
+              },
+              "sandbox": {
+                "enum": [
+                  "off",
+                  "preferred",
+                  "required"
+                ],
+                "default": "off"
+              },
+              "permission_profile": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "setting_sources": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "user",
+                    "project",
+                    "local"
+                  ]
+                },
+                "uniqueItems": true,
+                "default": [
+                  "project"
+                ]
+              },
+              "env_allowlist": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+                },
+                "default": []
+              },
+              "plugin_dirs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "default": []
+              },
+              "model": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": []
+          },
+          "cleanup": {
+            "type": "object",
+            "properties": {
+              "teardown": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": []
+          },
+          "restore_on_failure": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [],
+        "description": "Per-repository overrides; takes precedence over environment and global config (shape is a GAPS.md choice)."
+      },
+      "default": {}
+    }
+  }
 }
