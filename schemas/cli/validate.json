@@ -15,15 +15,7 @@
         "type": "object",
         "properties": {
           "name": {
-            "enum": [
-              "ticketctl",
-              "ticket-queue",
-              "forgectl",
-              "agent-spawn",
-              "jobsctl",
-              "wtctl",
-              "pr-watch"
-            ]
+            "$ref": "../defs.json#/$defs/tool_name"
           },
           "found": {
             "type": "boolean"
@@ -89,6 +81,12 @@
       "items": {
         "$ref": "../defs.json#/$defs/problem"
       }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/note"
+      }
     }
   },
   "additionalProperties": false,
@@ -97,7 +95,8 @@
     "probe",
     "tools",
     "boards",
-    "problems"
+    "problems",
+    "warnings"
   ],
   "description": "Exit 0 output (no problems). Exit 12 prints the error envelope with details.problems.",
   "title": "validate --json"

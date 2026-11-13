@@ -33,13 +33,26 @@
         "pending_resolved",
         "pending_expired"
       ]
+    },
+    "skipped": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/note"
+      },
+      "maxItems": 256
     }
   },
   "additionalProperties": false,
   "required": [
     "dry_run",
-    "removed"
+    "removed",
+    "skipped",
+    "warnings"
   ],
-  "description": "Counts of what was (or with --dry-run would be) removed.",
+  "description": "Counts of what was (or with --dry-run would be) removed; skipped counts finished items kept because their cleanup is unfinished; warnings carry agent_left.",
   "title": "prune --json"
 }

@@ -16,6 +16,9 @@
     "already_running": {
       "type": "boolean"
     },
+    "rerun": {
+      "type": "boolean"
+    },
     "partial": {
       "type": "boolean"
     },
@@ -31,9 +34,10 @@
     "items",
     "claims_released",
     "already_running",
+    "rerun",
     "partial",
     "errors"
   ],
-  "description": "Sync report.",
+  "description": "Sync report. rerun is true when sync_rerun made the run repeat its steps.",
   "title": "sync --json"
 }

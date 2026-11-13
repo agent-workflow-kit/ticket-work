@@ -10,12 +10,12 @@
       "type": "boolean"
     },
     "sync_interval": {
-      "$ref": "../defs.json#/$defs/duration"
+      "$ref": "../defs.json#/$defs/cron_interval"
     },
     "start_interval": {
       "oneOf": [
         {
-          "$ref": "../defs.json#/$defs/duration"
+          "$ref": "../defs.json#/$defs/cron_interval"
         },
         {
           "type": "null"

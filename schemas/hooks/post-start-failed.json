@@ -24,7 +24,7 @@
       "$ref": "../defs.json#/$defs/repo_id"
     },
     "labels": {
-      "$ref": "../defs.json#/$defs/labels"
+      "$ref": "../defs.json#/$defs/work_labels"
     },
     "board": {
       "$ref": "../defs.json#/$defs/board_name"
@@ -41,11 +41,13 @@
     "actor": {
       "$ref": "../defs.json#/$defs/actor"
     },
+    "decision_ids": {
+      "$ref": "../defs.json#/$defs/decision_ids"
+    },
     "reason": {
       "oneOf": [
         {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          "$ref": "../defs.json#/$defs/snake"
         },
         {
           "type": "null"
@@ -54,6 +56,9 @@
     },
     "restore_state": {
       "$ref": "../defs.json#/$defs/restore_state"
+    },
+    "dedupe_key": {
+      "$ref": "../defs.json#/$defs/dedupe_key"
     }
   },
   "additionalProperties": false,
@@ -70,7 +75,9 @@
     "key",
     "phase",
     "actor",
+    "decision_ids",
     "reason",
-    "restore_state"
+    "restore_state",
+    "dedupe_key"
   ]
 }

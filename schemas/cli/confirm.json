@@ -26,7 +26,7 @@
     "job": {
       "oneOf": [
         {
-          "$ref": "../defs.json#/$defs/job_ref"
+          "$ref": "../defs.json#/$defs/job_result"
         },
         {
           "type": "null"

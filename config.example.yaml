@@ -2,21 +2,24 @@
 # Location: ~/.config/ticket-work/config.yaml (respects XDG_CONFIG_HOME); drop-ins in config.d/*.yaml merge in
 # lexical order after it. Every key below is shown with its default unless noted.
 # Durations are strings such as 30m, 24h, 7d (units ms, s, m, h, d, w).
-# Environment: scalars can be set as TICKET_WORK_<KEY>, nested keys joined with __ (TICKET_WORK_AGENT__MODE).
-# Structured config (boards, hooks, rules) cannot be set from the environment.
+# Environment: only a closed list of non-safety scalars can be set as TICKET_WORK_<KEY>, nested keys joined with __
+# (me.name, instance, jobs.queue, jobs.kill_grace, sync.*, claim.ttl, claim.renew_below, claim.orphan_after,
+# pending.start_expiry, pending.expiry, retention.*). Everything else is config-file only.
 # Status names, repository ids and sites below are placeholders: ticket-work ships no status names.
 
 me:
   name: sam                       # actor name; default: the OS user name
-instance: laptop                  # part of the claim holder ticket-work:<instance>; default: the sanitized hostname
+instance: laptop                  # part of the claim holder ticket-work:<instance>; default: the lower-cased hostname with characters outside [A-Za-z0-9._-] replaced by -, cut to 64
 
-# A board maps a ticketctl site to repositories and a status map. ticket-work boards are matched to
-# ticket-queue boards by site and the ticket's facts, never by name.
+# A board maps a ticketctl site to repositories and a status map. A site has exactly one board.
+# A ticket-work board is bound to a ticket-queue board by queue_board, never by name.
 boards:
   main:
-    site: example                 # required: the ticketctl site
+    site: example                 # required: the ticketctl site (one board per site)
+    queue_board: main             # optional: the ticket-queue board whose tickets this board takes
+    trusted_authors: []           # account ids whose comments reach the prompt and whose tickets may start unattended; ["*"] allows any reporter
     repos:                        # required: ordered rules, the first match wins; an empty match is the board default
-      - match:                    # keys: component, label, project, epic, issue_type (all optional, ANDed)
+      - match:                    # keys: label, project, epic, issue_type (all optional, ANDed)
           issue_type: Bug
         repo: host/org/repo       # a repository id that wtctl locate can resolve
         base: main
@@ -39,7 +42,7 @@ boards:
       started:                    # events: started, pr_opened, pr_ready, pr_merged, pr_closed_unmerged, agent_blocked, agent_failed, stopped
         to: In Progress           # required: target status name
         from: ["To Do", "Ready"]  # required for started: the statuses the live ticket must be in
-        assign: me                # started only: me, none or an account id
+        assign: me                # me only (any rule): assigns when the ticket is unassigned
         sprint: open              # started only: open, next or a numeric sprint id
         confirm: ask              # ask (default; falls back to defaults.confirm), auto or never
         comment: false            # true posts one fixed-text comment per event
@@ -56,7 +59,7 @@ defaults:
   confirm: ask                    # default for a rule's confirm: ask, auto or never
 
 start:
-  max_pending: 1                  # unresolved pending starts allowed under start --auto
+  max_pending: 1                  # unresolved pending starts allowed under start --auto (the gate compares the open count with it)
 
 pending:
   start_expiry: 24h               # pending start lifetime
@@ -65,32 +68,29 @@ pending:
 claim:
   ttl: null                       # passed with --ttl when set; default: ticket-queue's own default
   renew_below: 0.5                # renew when this fraction of the TTL remains
-  orphan_after: 15m               # release a holder's claim that has no work item
+  orphan_after: 15m               # release or repair grace: a claim of this store with no work item, or a start stuck in applying
 
 sync:
   overlap: 1h                     # discovery watermark overlap
   reread_open_after: 1h           # re-read open pull requests at least this often
   pr_idle_after: 14d              # pr_idle threshold
 
-pr_watch:
-  enabled: false                  # use pr-watch events as an early trigger
-
 agent:
   skill: ticket-work:implement-ticket   # the implement-ticket slot skill
   mode: interactive               # interactive or headless
   sandbox: "off"                  # off, preferred or required (quoted: a bare off is a YAML boolean)
   permission_profile: null        # path; replaces the bundled permission profile
-  setting_sources: [project]      # Claude setting sources: user, project, local
-  env_allowlist: []               # --env-allowlist-only names
+  setting_sources: [project]      # Claude setting sources: user, project, local; unattended runs use [] unless repos.<id>.agent.setting_sources opts in
+  env_allowlist: []               # names added to the fixed base of --env-allowlist-only (jobs.pass_env names are never forwarded to the agent)
   plugin_dirs: []                 # extra plugin directories
   model: null                     # passed with --model when set
+  timeout: null                   # passed as --timeout when set; default none (headless runs are bounded by claude-session's kind default)
 
 jobs:
-  enabled: true                   # use jobsctl
+  enabled: true                   # use jobsctl (required for start --auto)
   queue: tickets                  # jobsctl queue
-  pass_env: []                    # --pass-env names (credentials come from jobsctl's env file)
+  pass_env: []                    # --pass-env names for the job's own tool calls (credentials come from jobsctl's env file); never forwarded to the agent or hooks
   kill_grace: 120s                # --kill-grace
-  max_running: 3                  # cap without jobsctl
 
 cleanup:
   teardown: true                  # tear down after pr_merged
@@ -121,9 +121,8 @@ tools:
   agent-spawn: agent-spawn
   jobsctl: jobsctl
   wtctl: wtctl
-  pr-watch: pr-watch
 
-# Per-repository overrides, keyed by repository id; they take precedence over the environment and the global config.
+# Per-repository overrides, keyed by repository id (agent.*, cleanup.teardown and restore_on_failure only); they take precedence over the environment and the global config.
 repos:
   host/org/repo:
     agent:

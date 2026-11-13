@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ticket-work/config.json",
   "title": "ticket-work config",
-  "description": "Config file (config.yaml plus config.d drop-ins merged). Self-contained: no external $ref. Environment variables can set scalars only (TICKET_WORK_<KEY>, nested keys joined with __). Structured config (boards, hooks, rules) cannot come from the environment.",
+  "description": "Config file (config.yaml plus config.d drop-ins merged). Self-contained: no external $ref. Only the closed scalar list of interface.md Environment variables can be set as TICKET_WORK_<KEY> (nested keys joined with __); structured config and safety settings are config-file only. A site has exactly one board (checked by the loader, JSON Schema cannot express it).",
   "type": "object",
   "additionalProperties": false,
   "$defs": {
@@ -12,7 +12,8 @@
     },
     "site_name": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$",
+      "description": "A config site name, at most 32 characters."
     },
     "board_name": {
       "type": "string",
@@ -28,6 +29,16 @@
     "name": {
       "type": "string",
       "pattern": "^[A-Za-z0-9._-]{1,64}$"
+    },
+    "duration_1m": {
+      "type": "string",
+      "pattern": "^(?:[1-9][0-9]{0,5}(?:m|h|d|w)|(?:[6-9][0-9]|[1-9][0-9]{2,5})s)$",
+      "description": "A duration of at least 1m."
+    },
+    "account": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
     },
     "rule_id": {
       "type": "string",
@@ -101,6 +112,12 @@
         "comment": {
           "type": "boolean",
           "default": false
+        },
+        "assign": {
+          "enum": [
+            "me"
+          ],
+          "description": "me only, on any rule: assigns when the ticket is unassigned (none and account ids are a config error)."
         }
       },
       "additionalProperties": false,
@@ -135,10 +152,10 @@
           "default": false
         },
         "assign": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256,
-          "description": "me, none or an account id."
+          "enum": [
+            "me"
+          ],
+          "description": "me only, on any rule: assigns when the ticket is unassigned (none and account ids are a config error)."
         },
         "sprint": {
           "oneOf": [
@@ -199,11 +216,6 @@
         "match": {
           "type": "object",
           "properties": {
-            "component": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 256
-            },
             "label": {
               "type": "string",
               "minLength": 1,
@@ -405,6 +417,18 @@
         "site": {
           "$ref": "#/$defs/site_name"
         },
+        "queue_board": {
+          "$ref": "#/$defs/board_name"
+        },
+        "trusted_authors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/account"
+          },
+          "default": [],
+          "maxItems": 256,
+          "description": "Account ids or [\"*\"] (any reporter); empty means only the user's own account."
+        },
         "repos": {
           "type": "array",
           "items": {
@@ -474,7 +498,7 @@
     "instance": {
       "type": "string",
       "pattern": "^[A-Za-z0-9._-]{1,64}$",
-      "description": "Default: the sanitized hostname."
+      "description": "Default: the hostname lower-cased, characters outside [A-Za-z0-9._-] replaced by -, cut to 64, host when empty. The store records it at first run and refuses a different value."
     },
     "boards": {
       "type": "object",
@@ -513,11 +537,11 @@
       "type": "object",
       "properties": {
         "start_expiry": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/duration_1m",
           "default": "24h"
         },
         "expiry": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/duration_1m",
           "default": "7d"
         }
       },
@@ -565,17 +589,6 @@
         "pr_idle_after": {
           "$ref": "#/$defs/duration",
           "default": "14d"
-        }
-      },
-      "additionalProperties": false,
-      "required": []
-    },
-    "pr_watch": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "default": false
         }
       },
       "additionalProperties": false,
@@ -629,7 +642,8 @@
           "uniqueItems": true,
           "default": [
             "project"
-          ]
+          ],
+          "description": "Default [\"project\"] for interactive runs, [] for unattended runs unless repos.<id>.agent.setting_sources opts in."
         },
         "env_allowlist": {
           "type": "array",
@@ -659,6 +673,17 @@
               "type": "null"
             }
           ]
+        },
+        "timeout": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/duration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "additionalProperties": false,
@@ -687,11 +712,6 @@
         "kill_grace": {
           "$ref": "#/$defs/duration",
           "default": "120s"
-        },
-        "max_running": {
-          "type": "integer",
-          "minimum": 1,
-          "default": 3
         }
       },
       "additionalProperties": false,
@@ -790,11 +810,6 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 4096
-        },
-        "pr-watch": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 4096
         }
       },
       "additionalProperties": false,
@@ -856,7 +871,8 @@
                 "uniqueItems": true,
                 "default": [
                   "project"
-                ]
+                ],
+                "description": "Default [\"project\"] for interactive runs, [] for unattended runs unless repos.<id>.agent.setting_sources opts in."
               },
               "env_allowlist": {
                 "type": "array",
@@ -886,6 +902,17 @@
                     "type": "null"
                   }
                 ]
+              },
+              "timeout": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/duration"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
               }
             },
             "additionalProperties": false,
@@ -907,7 +934,7 @@
         },
         "additionalProperties": false,
         "required": [],
-        "description": "Per-repository overrides; takes precedence over environment and global config (shape is a GAPS.md choice)."
+        "description": "Per-repository overrides of agent.* (all keys), cleanup.teardown and restore_on_failure only; takes precedence over environment and global config."
       },
       "default": {}
     }

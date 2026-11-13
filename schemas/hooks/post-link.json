@@ -24,7 +24,7 @@
       "$ref": "../defs.json#/$defs/repo_id"
     },
     "labels": {
-      "$ref": "../defs.json#/$defs/labels"
+      "$ref": "../defs.json#/$defs/work_labels"
     },
     "board": {
       "$ref": "../defs.json#/$defs/board_name"
@@ -41,7 +41,10 @@
     "actor": {
       "$ref": "../defs.json#/$defs/actor"
     },
-    "event": {
+    "decision_ids": {
+      "$ref": "../defs.json#/$defs/decision_ids"
+    },
+    "change": {
       "enum": [
         "link",
         "unlink"
@@ -70,7 +73,8 @@
     "key",
     "phase",
     "actor",
-    "event",
+    "decision_ids",
+    "change",
     "pr_ids"
   ]
 }

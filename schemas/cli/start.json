@@ -57,7 +57,7 @@
         "job": {
           "oneOf": [
             {
-              "$ref": "../defs.json#/$defs/job_ref"
+              "$ref": "../defs.json#/$defs/job_result"
             },
             {
               "type": "null"
@@ -82,7 +82,7 @@
         "warnings",
         "dry_run"
       ],
-      "description": "Start result object. work and job are null for a dry run or a pending start; claim is the ticket-queue claim object, verbatim."
+      "description": "Start result object. work is null only for a dry run (a pending start has a stored item in phase pending); job is null when no job exists; claim is the ticket-queue claim object, verbatim."
     },
     {
       "type": "object",

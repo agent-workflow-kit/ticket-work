@@ -14,7 +14,7 @@ L3 (workflow). A skill-wrapper tool for the `implement-ticket` slot. It works st
 
 - `start` claims the next ranked ticket (or a given key) from ticket-queue, checks the board's preconditions, shows and confirms the assignment, sprint and status change (or records a pending confirmation when no human is present), and enqueues a job.
 - The job launches an interactive implement agent (kind `implement`) in a new worktree through agent-spawn, labeled with the ticket. The agent opens a draft pull request itself.
-- `sync` renews claims, finds and links the ticket's pull requests (with a recorded evidence tier), derives events from their state and applies the board's status map, tears the work down after the merge and releases the claim.
+- `sync` renews claims (and re-takes a lapsed one), repairs interrupted starts, finds and links the ticket's pull requests (with a recorded evidence tier), derives events from their state and applies the board's status map, tears the work down after the merge and releases the claim.
 - `resume`, `stop`, `link` and `unlink` steer a work item; `pending`, `confirm` and `reject` handle confirmations.
 - Organization rules (status names, resolutions, "needs an estimate to start") live in the user's config as per-board status maps and preconditions. Nothing organization-specific ships in this repository.
 
@@ -35,7 +35,7 @@ Every command that outputs data supports `--json`. The full surface, exit codes 
 
 ## Safe defaults
 
-Starting a ticket is manual. Ticket status changes are shown and confirmed (a non-interactive run records a pending confirmation). Staleness never moves a ticket or removes a worktree. The agent opens draft pull requests only. The implement agent runs as a trusted session with the sandbox off by default; every safety setting is a config key.
+Starting a ticket is manual. Ticket status changes are shown and confirmed (a non-interactive run records a pending confirmation). Staleness never moves a ticket or removes a worktree. The agent opens draft pull requests only. The implement agent runs as a trusted session with the sandbox off by default; every safety setting is a config key. Unattended runs (`start --auto`, `--mode headless`) start only tickets from a trusted reporter and read only comments of trusted authors.
 
 ## Dependencies
 
@@ -45,9 +45,8 @@ Starting a ticket is manual. Ticket status changes are shown and confirmed (a no
 | ticket-queue | A (hard) | which ticket next; claims | `uv tool install git+https://github.com/agent-workflow-kit/ticket-queue` |
 | forgectl | A (hard) | pull request discovery and state | `uv tool install git+https://github.com/agent-workflow-kit/forgectl` |
 | agent-spawn | A (hard) | launches, resumes and tears down agents | `uv tool install git+https://github.com/agent-workflow-kit/agent-spawn` |
-| wtctl | A (hard) | repository check before a start | `uv tool install git+https://github.com/agent-workflow-kit/wtctl` |
-| jobsctl | A (optional) | the `tickets` job queue | `uv tool install git+https://github.com/agent-workflow-kit/jobsctl` |
-| pr-watch | A (optional) | early-detection trigger | `uv tool install git+https://github.com/agent-workflow-kit/pr-watch` |
+| wtctl | A (hard) | repository check before a start, agent adoption | `uv tool install git+https://github.com/agent-workflow-kit/wtctl` |
+| jobsctl | A (required for `start --auto`, optional otherwise) | the `tickets` job queue | `uv tool install git+https://github.com/agent-workflow-kit/jobsctl` |
 
 A missing required tool is a clear error naming its install command.
 
@@ -59,7 +58,7 @@ uv tool install git+https://github.com/agent-workflow-kit/ticket-work
 
 ## Configuration
 
-`~/.config/ticket-work/config.yaml` plus `config.d/*.yaml`; see `config.example.yaml` for every key. State lives under `~/.local/state/ticket-work/`. ticket-work holds no credentials: each sibling tool reads its own, and a job receives the variable names listed in `jobs.pass_env` from jobsctl's env file.
+`~/.config/ticket-work/config.yaml` plus `config.d/*.yaml`; see `config.example.yaml` for every key. State lives under `~/.local/state/ticket-work/`. ticket-work holds no credentials: each sibling tool reads its own, and a job receives the variable names listed in `jobs.pass_env` from jobsctl's env file for ticket-work's own tool calls. The agent gets a fixed environment base plus the names in `agent.env_allowlist` only; `jobs.pass_env` names never reach the agent, so a variable the agent needs is listed in both.
 
 ## Exit codes
 

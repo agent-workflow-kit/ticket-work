@@ -27,25 +27,14 @@
       "$ref": "../defs.json#/$defs/phase"
     },
     "needs_attention": {
-      "oneOf": [
-        {
-          "$ref": "../defs.json#/$defs/attention_reason"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": "boolean"
     },
-    "attention_detail": {
-      "oneOf": [
-        {
-          "type": "object",
-          "x-untrusted": true
-        },
-        {
-          "type": "null"
-        }
-      ]
+    "attention": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/attention_entry"
+      },
+      "maxItems": 32
     },
     "repo": {
       "$ref": "../defs.json#/$defs/repo_id"
@@ -88,6 +77,13 @@
           "type": "null"
         }
       ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/work_step"
+      },
+      "maxItems": 16
     },
     "job": {
       "oneOf": [
@@ -139,6 +135,19 @@
         }
       ]
     },
+    "last_artifact": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/last_artifact"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "labels": {
+      "$ref": "../defs.json#/$defs/work_labels"
+    },
     "created": {
       "$ref": "../defs.json#/$defs/ts"
     },
@@ -170,7 +179,7 @@
     "title",
     "phase",
     "needs_attention",
-    "attention_detail",
+    "attention",
     "repo",
     "branch",
     "base",
@@ -178,6 +187,7 @@
     "claim",
     "previous",
     "started_status",
+    "steps",
     "job",
     "agent",
     "links",
@@ -185,6 +195,8 @@
     "cleanup",
     "restore_state",
     "last_report",
+    "last_artifact",
+    "labels",
     "created",
     "updated",
     "pending_records",

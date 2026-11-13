@@ -96,6 +96,26 @@
               "type": "null"
             }
           ]
+        },
+        "pending_id": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/pending_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lower_attempt_id": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/attempt_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
