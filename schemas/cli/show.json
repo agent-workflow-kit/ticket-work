@@ -145,6 +145,23 @@
         }
       ]
     },
+    "rejected_claims": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/rejected_claim"
+      },
+      "maxItems": 20
+    },
+    "merge_wait": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/merge_wait"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "labels": {
       "$ref": "../defs.json#/$defs/work_labels"
     },
@@ -196,12 +213,14 @@
     "restore_state",
     "last_report",
     "last_artifact",
+    "rejected_claims",
+    "merge_wait",
     "labels",
     "created",
     "updated",
     "pending_records",
     "events"
   ],
-  "description": "The work item plus its pending records and the last 20 events (shape of the addition is a GAPS.md choice).",
+  "description": "The work item plus its pending records and the last 20 events (printed fields: pending_records holds the full records, events the last 20).",
   "title": "show --json"
 }

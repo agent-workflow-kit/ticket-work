@@ -12,5 +12,5 @@
     "error"
   ],
   "title": "Error envelope (any command with --json)",
-  "description": "Printed for exits 2, 10, 11, 12, 20 and 21. error.code is a closed class per exit; error.reason is separate and null when unused. Also written to stderr."
+  "description": "Printed for exits 1, 2, 10, 11, 12, 20 and 21. error.code is a closed class per exit; error.reason is separate and null when unused. Also written to stderr."
 }

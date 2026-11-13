@@ -56,6 +56,6 @@
     "new_pending",
     "warnings"
   ],
-  "description": "Output shape absent from interface.md (GAPS.md). new_pending is set on exit 13 (stale plan or a hook escalated again).",
+  "description": "new_pending is set on exit 13 (stale plan or a hook escalated again).",
   "title": "confirm --json"
 }

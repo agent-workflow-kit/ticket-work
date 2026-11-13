@@ -28,14 +28,14 @@ ticket-work list | show KEY
 ticket-work stop KEY
 ticket-work link KEY PR | unlink KEY PR
 ticket-work pending | confirm ID | reject ID
-ticket-work cron install|uninstall | export | prune | validate
+ticket-work cron install|uninstall | export | prune [--item KEY] | validate
 ```
 
 Every command that outputs data supports `--json`. The full surface, exit codes and the order of each flow are in the interface document.
 
 ## Safe defaults
 
-Starting a ticket is manual. Ticket status changes are shown and confirmed (a non-interactive run records a pending confirmation). Staleness never moves a ticket or removes a worktree. The agent opens draft pull requests only. The implement agent runs as a trusted session with the sandbox off by default; every safety setting is a config key. Unattended runs (`start --auto`, `--mode headless`) start only tickets from a trusted reporter and read only comments of trusted authors.
+Starting a ticket is manual. Ticket status changes are shown and confirmed (a non-interactive run records a pending confirmation). Staleness never moves a ticket or removes a worktree. The agent opens draft pull requests only. The implement agent runs as a trusted session with the sandbox off by default; every safety setting is a config key. Unattended runs (`start --auto`, `--mode headless`) start only tickets from a trusted reporter and read only unedited comments of trusted authors.
 
 ## Dependencies
 
@@ -58,11 +58,11 @@ uv tool install git+https://github.com/agent-workflow-kit/ticket-work
 
 ## Configuration
 
-`~/.config/ticket-work/config.yaml` plus `config.d/*.yaml`; see `config.example.yaml` for every key. State lives under `~/.local/state/ticket-work/`. ticket-work holds no credentials: each sibling tool reads its own, and a job receives the variable names listed in `jobs.pass_env` from jobsctl's env file for ticket-work's own tool calls. The agent gets a fixed environment base plus the names in `agent.env_allowlist` only; `jobs.pass_env` names never reach the agent, so a variable the agent needs is listed in both.
+`~/.config/ticket-work/config.yaml` plus `config.d/*.yaml`; see `config.example.yaml` for every key. State lives under `~/.local/state/ticket-work/`. ticket-work holds no credentials: each sibling tool reads its own, and a job receives the variable names listed in `jobs.pass_env` from jobsctl's env file for ticket-work's own tool calls. The agent gets a fixed environment base plus the names in `agent.env_allowlist` only; `jobs.pass_env` names never reach the agent, so a variable the agent needs is listed in both. Only a closed list of non-safety scalars can be set as `TICKET_WORK_<KEY>` (`me.name`, `instance`, `jobs.kill_grace`, `sync.overlap`, `sync.reread_open_after`, `sync.pr_idle_after`, `claim.ttl`, `claim.renew_below`, `pending.start_expiry`, `pending.expiry`, `retention.work`, `retention.pending`); everything else is config-file only.
 
 ## Exit codes
 
-Reserved codes follow the design guide (0, 1, 2, 10 to 13, 14 to 18, 20, 21). Tool-specific: 22 means `start` found nothing to start (reasons `empty`, `no_capacity`, `pending_exists`). Refusal reasons are listed in the interface.
+Reserved codes follow the design guide (0, 1, 2, 10 to 13, 14 to 18, 20, 21). Tool-specific: 22 means `start` found nothing to start (reasons `empty`, `no_capacity`, `pending_exists`, `scan_exhausted`). Refusal reasons are listed in the interface.
 
 ## Documentation
 

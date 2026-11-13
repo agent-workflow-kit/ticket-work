@@ -3,8 +3,9 @@
 # lexical order after it. Every key below is shown with its default unless noted.
 # Durations are strings such as 30m, 24h, 7d (units ms, s, m, h, d, w).
 # Environment: only a closed list of non-safety scalars can be set as TICKET_WORK_<KEY>, nested keys joined with __
-# (me.name, instance, jobs.queue, jobs.kill_grace, sync.*, claim.ttl, claim.renew_below, claim.orphan_after,
-# pending.start_expiry, pending.expiry, retention.*). Everything else is config-file only.
+# (me.name, instance, jobs.kill_grace, sync.overlap, sync.reread_open_after, sync.pr_idle_after, claim.ttl,
+# claim.renew_below, pending.start_expiry, pending.expiry, retention.work, retention.pending). Everything else
+# (including jobs.queue, claim.orphan_after, start.* and sync.call_timeout) is config-file only.
 # Status names, repository ids and sites below are placeholders: ticket-work ships no status names.
 
 me:
@@ -17,7 +18,8 @@ boards:
   main:
     site: example                 # required: the ticketctl site (one board per site)
     queue_board: main             # optional: the ticket-queue board whose tickets this board takes
-    trusted_authors: []           # account ids whose comments reach the prompt and whose tickets may start unattended; ["*"] allows any reporter
+    # sprint_board: "12"          # optional: the board passed to ticketctl sprint add --board; needed when the site has several boards
+    trusted_authors: []           # account ids whose unedited comments reach the prompt and whose tickets may start unattended; ["*"] allows any reporter
     repos:                        # required: ordered rules, the first match wins; an empty match is the board default
       - match:                    # keys: label, project, epic, issue_type (all optional, ANDed)
           issue_type: Bug
@@ -44,7 +46,7 @@ boards:
         from: ["To Do", "Ready"]  # required for started: the statuses the live ticket must be in
         assign: me                # me only (any rule): assigns when the ticket is unassigned
         sprint: open              # started only: open, next or a numeric sprint id
-        confirm: ask              # ask (default; falls back to defaults.confirm), auto or never
+        confirm: ask              # ask (default; falls back to defaults.confirm) or auto (never is a config error for started; other events also accept never)
         comment: false            # true posts one fixed-text comment per event
       pr_opened:
         to: In Review
@@ -60,6 +62,7 @@ defaults:
 
 start:
   max_pending: 1                  # unresolved pending starts allowed under start --auto (the gate compares the open count with it)
+  scan_limit: 5                   # claims one run of start --auto may take while refusing candidates (1 to 20)
 
 pending:
   start_expiry: 24h               # pending start lifetime
@@ -68,19 +71,20 @@ pending:
 claim:
   ttl: null                       # passed with --ttl when set; default: ticket-queue's own default
   renew_below: 0.5                # renew when this fraction of the TTL remains
-  orphan_after: 15m               # release or repair grace: a claim of this store with no work item, or a start stuck in applying
+  orphan_after: 15m               # at least 5m; release or repair grace: a claim of this store with no work item, or a start stuck in applying
 
 sync:
   overlap: 1h                     # discovery watermark overlap
   reread_open_after: 1h           # re-read open pull requests at least this often
   pr_idle_after: 14d              # pr_idle threshold
+  call_timeout: 120s              # timeout of every lower call (5s to 30m); on expiry the child process is stopped and the call fails transient
 
 agent:
   skill: ticket-work:implement-ticket   # the implement-ticket slot skill
   mode: interactive               # interactive or headless
   sandbox: "off"                  # off, preferred or required (quoted: a bare off is a YAML boolean)
   permission_profile: null        # path; replaces the bundled permission profile
-  setting_sources: [project]      # Claude setting sources: user, project, local; unattended runs use [] unless repos.<id>.agent.setting_sources opts in
+  setting_sources: [project]      # Claude setting sources: user, project, local; default [project] interactive, [] unattended (opt in with repos.<id>.agent.setting_sources)
   env_allowlist: []               # names added to the fixed base of --env-allowlist-only (jobs.pass_env names are never forwarded to the agent)
   plugin_dirs: []                 # extra plugin directories
   model: null                     # passed with --model when set
@@ -90,6 +94,7 @@ jobs:
   enabled: true                   # use jobsctl (required for start --auto)
   queue: tickets                  # jobsctl queue
   pass_env: []                    # --pass-env names for the job's own tool calls (credentials come from jobsctl's env file); never forwarded to the agent or hooks
+  # pass_env: [TMUX, SSH_AUTH_SOCK]   # an interactive launch from a job may need these (see validate)
   kill_grace: 120s                # --kill-grace
 
 cleanup:

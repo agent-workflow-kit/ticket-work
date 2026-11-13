@@ -22,6 +22,9 @@
     "partial": {
       "type": "boolean"
     },
+    "dry_run": {
+      "type": "boolean"
+    },
     "errors": {
       "type": "array",
       "items": {
@@ -36,8 +39,9 @@
     "already_running",
     "rerun",
     "partial",
+    "dry_run",
     "errors"
   ],
-  "description": "Sync report. rerun is true when sync_rerun made the run repeat its steps.",
+  "description": "Sync report. rerun is true when sync_rerun made the run repeat its steps; dry_run is true for sync --dry-run, where each item entry also lists would_events.",
   "title": "sync --json"
 }

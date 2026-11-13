@@ -19,6 +19,6 @@
     "changed",
     "dry_run"
   ],
-  "description": "Output shape absent from interface.md (GAPS.md).",
+  "description": "See interface.md Objects.",
   "title": "cron uninstall --json"
 }

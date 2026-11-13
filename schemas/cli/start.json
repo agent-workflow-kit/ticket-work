@@ -92,6 +92,26 @@
         },
         "reason": {
           "$ref": "../defs.json#/$defs/nothing_reason"
+        },
+        "refused": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "$ref": "../defs.json#/$defs/key"
+              },
+              "reason": {
+                "$ref": "../defs.json#/$defs/error_reason"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "reason"
+            ]
+          },
+          "maxItems": 20
         }
       },
       "additionalProperties": false,
@@ -99,7 +119,7 @@
         "nothing_to_start",
         "reason"
       ],
-      "description": "Exit 22 output (interface.md says only 'the command's object'; see GAPS.md)."
+      "description": "Exit 22 output. refused (scan_exhausted only): the candidates a start --auto run claimed and refused."
     }
   ]
 }

@@ -26,6 +26,6 @@
     "work",
     "claim_released"
   ],
-  "description": "Output shape absent from interface.md (GAPS.md).",
+  "description": "See interface.md Objects.",
   "title": "reject --json"
 }

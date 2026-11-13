@@ -139,7 +139,7 @@
     "reason": {
       "oneOf": [
         {
-          "$ref": "defs.json#/$defs/error_code"
+          "$ref": "defs.json#/$defs/error_reason"
         },
         {
           "type": "null"

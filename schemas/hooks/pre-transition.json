@@ -48,7 +48,8 @@
       "oneOf": [
         {
           "type": "string",
-          "pattern": "^[a-z_]{1,64}$"
+          "pattern": "^[a-z_]{1,64}$",
+          "description": "The event name of the status-map rule that applies (started, pr_merged, ...), or null for a hook with no rule."
         },
         {
           "type": "null"

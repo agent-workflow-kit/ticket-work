@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ticket-work/log.json",
   "title": "ticket-work log.jsonl record",
-  "description": "Public operational log, one record per line. No ticket, pull request or model text beyond keys and ids. Record shapes are not defined by interface.md beyond 'public append-only contract' (GAPS.md).",
+  "description": "Public operational log, one record per line. No ticket, pull request or model text beyond keys and ids.",
   "oneOf": [
     {
       "type": "object",

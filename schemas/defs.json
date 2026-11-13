@@ -109,7 +109,7 @@
     "status_name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 128
+      "maxLength": 64
     },
     "hook_name": {
       "enum": [
@@ -204,7 +204,7 @@
     "event_key": {
       "type": "string",
       "pattern": "^[A-Za-z0-9._:-]{1,128}$",
-      "description": "once, the first 16 hex of a sha256 over the sorted pr_id set, or <agent id>:<run>."
+      "description": "once, the first 16 hex of a sha256 (over the sorted pr_id set, or over the run token for started), or <agent id>:<run>."
     },
     "plan_action": {
       "enum": [
@@ -267,8 +267,7 @@
         "start",
         "transition",
         "comment",
-        "launch",
-        "stop"
+        "launch"
       ]
     },
     "pending_status": {
@@ -341,18 +340,19 @@
         "refused",
         "ambiguous_key"
       ],
-      "description": "Closed class per exit: 1 internal; 2 invalid_argument; 10 not_found; 11 hook_vetoed; 12 lower_failed, tool_missing, tool_too_old, partial_results, repo_unresolved, schema_newer; 20 refused; 21 ambiguous_key."
+      "description": "Closed class per exit: 1 internal (reasons lease_lost, lease_timeout); 2 invalid_argument; 10 not_found; 11 hook_vetoed; 12 lower_failed, tool_missing, tool_too_old, partial_results, repo_unresolved, schema_newer; 20 refused; 21 ambiguous_key."
     },
     "error_reason": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,63}$",
-      "description": "snake_case. ticket-work reasons: live, precondition_failed, unmapped, already_started, not_active, not_current_job, claimed, claim_lost, declined, expired, not_pending, stale_plan, not_linkable, untrusted_reporter, human_only, invalid_combination, stdin_conflict, invalid_config, missing_option; a lower tool reason passes through unchanged (the lower error is in details.lower_error)."
+      "description": "snake_case. ticket-work reasons: live, precondition_failed, unmapped, already_started, not_active, not_current_job, claimed, claim_lost, declined, expired, not_pending, stale_plan, not_linkable, untrusted_reporter, foreign_claim, job_key_taken, busy, lease_lost, lease_timeout, unsafe_state_dir, human_only, invalid_combination, stdin_conflict, invalid_config, missing_option; a lower tool reason passes through unchanged (the lower error is in details.lower_error)."
     },
     "nothing_reason": {
       "enum": [
         "empty",
         "no_capacity",
-        "pending_exists"
+        "pending_exists",
+        "scan_exhausted"
       ]
     },
     "claim_state": {
@@ -447,7 +447,7 @@
         },
         "details": {
           "type": "object",
-          "description": "Open object. Shapes by reason: precondition_failed {rules, current_status, unknown}; not_linkable {why}; live {agent_id, job_id}; already_started {phase}; unmapped {why}; untrusted_reporter {reporter}; not_active {phase}; claim_lost {lower_reason}; stale_plan {new_pending}; candidates (ambiguous_key); errors (partial_results); problems (validate); lower_error; status (torn_down)."
+          "description": "Open object. Shapes by reason: precondition_failed {rules, current_status, unknown}; not_linkable {why}; live {agent_id, job_id}; already_started {phase}; unmapped {why}; untrusted_reporter {reporter}; not_active {phase, cleanup?, hold_reason?}; claim_lost {lower_reason}; stale_plan {new_pending}; foreign_claim {key}; job_key_taken {job_id}; busy {}; refused (nothing_to_start scan_exhausted) {refused}; candidates (ambiguous_key); errors (partial_results); problems (validate); lower_error; status (torn_down)."
         },
         "tool": {
           "oneOf": [
@@ -694,22 +694,33 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "status": {
           "type": "string",
           "minLength": 1,
           "maxLength": 64
+        },
+        "foreground": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false,
       "required": [
         "id",
-        "status"
+        "status",
+        "foreground"
       ],
-      "description": "jobsctl job id and status (jobsctl's own enum)."
+      "description": "Job of a work item: jobsctl job id and status (jobsctl's own enum); id is null and foreground true for a run without jobsctl."
     },
     "agent_ref": {
       "type": "object",
@@ -807,18 +818,6 @@
             }
           ]
         },
-        "assignee": {
-          "oneOf": [
-            {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 256
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "sprint_ids": {
           "type": "array",
           "items": {
@@ -831,7 +830,6 @@
       "additionalProperties": false,
       "required": [
         "status",
-        "assignee",
         "sprint_ids"
       ],
       "description": "Recorded before the start applies anything; used by the restore flow."
@@ -892,6 +890,7 @@
         "step": {
           "enum": [
             "transition",
+            "assign",
             "sprint_add"
           ]
         },
@@ -904,7 +903,7 @@
         "step",
         "status"
       ],
-      "description": "Write-ahead step list entry of a start."
+      "description": "Write-ahead step list entry of a start (display only; restore never reads it)."
     },
     "last_artifact": {
       "type": "object",
@@ -912,10 +911,38 @@
         "prs": {
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2048,
-            "pattern": "^https?://[^\\s]+$"
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048,
+                "pattern": "^https?://[^\\s]+$"
+              },
+              "pr_id": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/pr_id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "linked",
+                  "rejected",
+                  "unverified"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "pr_id",
+              "verdict"
+            ]
           },
           "maxItems": 20
         },
@@ -944,13 +971,65 @@
       "maxItems": 4,
       "description": "ticket=<KEY>, owner=ticket-work, repo=<repo id>, board=<name>."
     },
+    "merge_wait": {
+      "enum": [
+        "agent_unfinished",
+        "others_open",
+        "not_landed"
+      ],
+      "description": "Why a merge waits (pr_merged_partial reason); null when none."
+    },
+    "rejected_claim": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^https?://[^\\s]+$"
+        },
+        "why": {
+          "$ref": "#/$defs/snake"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "url",
+        "why"
+      ],
+      "description": "An artifact url that was rejected (repo_not_mapped, or a not_linkable why)."
+    },
     "pr_brief": {
       "type": "object",
       "properties": {
         "pr": {
           "$ref": "#/$defs/pr_ref"
         },
-        "state": {
+        "pr_state": {
+          "oneOf": [
+            {
+              "enum": [
+                "open",
+                "closed",
+                "merged"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "draft": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link_state": {
           "$ref": "#/$defs/link_state"
         },
         "counts": {
@@ -960,10 +1039,12 @@
       "additionalProperties": false,
       "required": [
         "pr",
-        "state",
+        "pr_state",
+        "draft",
+        "link_state",
         "counts"
       ],
-      "description": "Row of work_summary.prs."
+      "description": "Row of work_summary.prs; pr_state is null before the first read."
     },
     "work_item": {
       "type": "object",
@@ -1110,6 +1191,23 @@
             }
           ]
         },
+        "rejected_claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rejected_claim"
+          },
+          "maxItems": 20
+        },
+        "merge_wait": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/merge_wait"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "labels": {
           "$ref": "#/$defs/work_labels"
         },
@@ -1147,6 +1245,8 @@
         "restore_state",
         "last_report",
         "last_artifact",
+        "rejected_claims",
+        "merge_wait",
         "labels",
         "created",
         "updated"
@@ -1211,6 +1311,16 @@
           },
           "maxItems": 64
         },
+        "merge_wait": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/merge_wait"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "labels": {
           "$ref": "#/$defs/work_labels"
         },
@@ -1249,13 +1359,14 @@
         "job",
         "agent",
         "pending",
+        "merge_wait",
         "labels",
         "created",
         "updated",
         "attention",
         "prs"
       ],
-      "description": "One row of list --json: the work item without requested_keys, base, holder, claim, previous, started_status, links, cleanup, restore_state, last_report, steps and last_artifact; attention is the list of reason names; adds prs."
+      "description": "One row of list --json: the work item without requested_keys, base, holder, claim, previous, started_status, links, cleanup, restore_state, last_report, steps, last_artifact and rejected_claims; attention is the list of reason names; adds prs; job may be null or have a null id."
     },
     "change": {
       "type": "object",
@@ -1383,7 +1494,7 @@
         "transition",
         "sprint"
       ],
-      "description": "The two Start order step 7 plans."
+      "description": "The two Start order step 6 plans."
     },
     "applied_step": {
       "type": "object",
@@ -1436,8 +1547,66 @@
           "type": "object",
           "description": "A start pending also holds the two plans."
         },
+        "overrides": {
+          "type": "object",
+          "description": "The --skill, --mode and --sandbox overrides of the start."
+        },
+        "unattended": {
+          "type": "boolean"
+        },
+        "previous": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/previous"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "intent": {
+          "type": "object",
+          "properties": {
+            "assign": {
+              "type": "boolean"
+            },
+            "sprint_id": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "assign",
+            "sprint_id"
+          ]
+        },
         "superseded_by": {
           "$ref": "#/$defs/pending_id"
+        },
+        "superseded_by_event": {
+          "$ref": "#/$defs/snake"
+        },
+        "rejected_by": {
+          "$ref": "#/$defs/snake"
+        },
+        "reason": {
+          "$ref": "#/$defs/snake"
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "apply_error": {
+          "type": "object",
+          "description": "The error that left nothing landed (error envelope body)."
         },
         "job_id": {
           "type": "string",
@@ -1451,7 +1620,7 @@
       },
       "additionalProperties": false,
       "required": [],
-      "description": "changes: what the human is asked to accept; superseded_by: set on a record replaced by a re-plan; job_id and attempt: the held job of a launch pending."
+      "description": "changes: what the human is asked to accept; plans, overrides, unattended, previous, intent: a start pending; superseded_by: set on a record replaced by a re-plan; superseded_by_event: a transition or comment record replaced by a newer pull request event; rejected_by, reason, hint, apply_error: resolution notes; job_id and attempt: the held job of a launch pending."
     },
     "pending_record": {
       "type": "object",
@@ -1484,6 +1653,16 @@
         },
         "plan_sha256": {
           "$ref": "#/$defs/plan_hashes"
+        },
+        "launch_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "rule": {
           "oneOf": [
@@ -1544,6 +1723,7 @@
         "expires",
         "actor",
         "plan_sha256",
+        "launch_sha256",
         "rule",
         "event",
         "escalated_by",
@@ -1721,6 +1901,13 @@
           },
           "maxItems": 64
         },
+        "would_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_name"
+          },
+          "maxItems": 16
+        },
         "applied": {
           "type": "array",
           "items": {
@@ -1755,7 +1942,8 @@
         "pending",
         "errors",
         "lease_held"
-      ]
+      ],
+      "description": "would_events: the event names a dry run would evaluate (dry run only)."
     },
     "problem": {
       "type": "object",

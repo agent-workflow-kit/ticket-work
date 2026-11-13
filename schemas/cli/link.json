@@ -35,6 +35,6 @@
     "applied",
     "dry_run"
   ],
-  "description": "Output shape absent from interface.md (GAPS.md). changed is false for an idempotent repeat.",
+  "description": "changed is false for an idempotent repeat.",
   "title": "link --json"
 }
