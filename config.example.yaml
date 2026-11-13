@@ -10,7 +10,7 @@
 
 me:
   name: sam                       # actor name; default: the OS user name
-instance: laptop                  # part of the claim holder ticket-work:<instance>; default: the lower-cased hostname with characters outside [A-Za-z0-9._-] replaced by -, cut to 64
+instance: laptop                  # part of the claim holder ticket-work:<instance>:<store id>, 1 to 64 characters of [A-Za-z0-9._-]; default: the lower-cased hostname with characters outside [A-Za-z0-9._-] replaced by -, cut to 64
 
 # A board maps a ticketctl site to repositories and a status map. A site has exactly one board.
 # A ticket-work board is bound to a ticket-queue board by queue_board, never by name.
@@ -19,7 +19,7 @@ boards:
     site: example                 # required: the ticketctl site (one board per site)
     queue_board: main             # optional: the ticket-queue board whose tickets this board takes
     # sprint_board: "12"          # optional: the board passed to ticketctl sprint add --board; needed when the site has several boards
-    trusted_authors: []           # account ids whose unedited comments reach the prompt and whose tickets may start unattended; ["*"] allows any reporter
+    trusted_authors: []           # account ids whose unedited comments reach the prompt and whose tickets may start unattended; ["*"] allows any reporter (never any comment) and cannot be combined with other elements
     repos:                        # required: ordered rules, the first match wins; an empty match is the board default
       - match:                    # keys: label, project, epic, issue_type (all optional, ANDed)
           issue_type: Bug
@@ -84,7 +84,7 @@ agent:
   mode: interactive               # interactive or headless
   sandbox: "off"                  # off, preferred or required (quoted: a bare off is a YAML boolean)
   permission_profile: null        # path; replaces the bundled permission profile
-  setting_sources: [project]      # Claude setting sources: user, project, local; default [project] interactive, [] unattended (opt in with repos.<id>.agent.setting_sources)
+  # setting_sources: [project]   # Claude setting sources: user, project, local; the global value applies to interactive runs only (default [project]); an unattended run uses [] unless repos.<id>.agent.setting_sources is set
   env_allowlist: []               # names added to the fixed base of --env-allowlist-only (jobs.pass_env names are never forwarded to the agent)
   plugin_dirs: []                 # extra plugin directories
   model: null                     # passed with --model when set

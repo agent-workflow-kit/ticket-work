@@ -21,8 +21,8 @@
     },
     "holder": {
       "type": "string",
-      "pattern": "^ticket-work:[A-Za-z0-9._-]{1,64}$",
-      "description": "Opaque claim holder ticket-work:<instance>."
+      "pattern": "^ticket-work:[A-Za-z0-9._-]{1,64}:[a-z2-7]{26}$",
+      "description": "Opaque claim holder ticket-work:<instance>:<store id>: the instance is 1 to 64 characters of [A-Za-z0-9._-], the store id is the 26-character random id of this state database; at most 103 characters, within ticket-queue's 256-character holder grammar."
     },
     "work_id": {
       "type": "string",
@@ -345,7 +345,7 @@
     "error_reason": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,63}$",
-      "description": "snake_case. ticket-work reasons: live, precondition_failed, unmapped, already_started, not_active, not_current_job, claimed, claim_lost, declined, expired, not_pending, stale_plan, not_linkable, untrusted_reporter, foreign_claim, job_key_taken, busy, lease_lost, lease_timeout, unsafe_state_dir, human_only, invalid_combination, stdin_conflict, invalid_config, missing_option; a lower tool reason passes through unchanged (the lower error is in details.lower_error)."
+      "description": "snake_case. ticket-work reasons: live, precondition_failed, unmapped, already_started, not_active, not_current_job, claimed, claim_lost, declined, expired, not_pending, stale_plan, not_linkable, untrusted_reporter, job_key_taken, busy, lease_lost, lease_timeout, unsafe_state_dir, human_only, invalid_combination, stdin_conflict, invalid_config, missing_option; a lower tool reason passes through unchanged (the lower error is in details.lower_error)."
     },
     "nothing_reason": {
       "enum": [
@@ -447,7 +447,7 @@
         },
         "details": {
           "type": "object",
-          "description": "Open object. Shapes by reason: precondition_failed {rules, current_status, unknown}; not_linkable {why}; live {agent_id, job_id}; already_started {phase}; unmapped {why}; untrusted_reporter {reporter}; not_active {phase, cleanup?, hold_reason?}; claim_lost {lower_reason}; stale_plan {new_pending}; foreign_claim {key}; job_key_taken {job_id}; busy {}; refused (nothing_to_start scan_exhausted) {refused}; candidates (ambiguous_key); errors (partial_results); problems (validate); lower_error; status (torn_down)."
+          "description": "Open object. Shapes by reason: precondition_failed {rules, current_status, unknown}; not_linkable {why}; live {agent_id, job_id}; already_started {phase}; unmapped {why}; untrusted_reporter {reporter}; not_active {phase, cleanup?, hold_reason?}; claim_lost {lower_reason}; stale_plan {new_pending}; job_key_taken {job_id}; busy {}; refused (nothing_to_start scan_exhausted) {refused}; candidates (ambiguous_key); errors (partial_results); problems (validate); lower_error; status (torn_down)."
         },
         "tool": {
           "oneOf": [
@@ -1931,6 +1931,17 @@
         },
         "lease_held": {
           "type": "boolean"
+        },
+        "lease_age_s": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -1943,7 +1954,7 @@
         "errors",
         "lease_held"
       ],
-      "description": "would_events: the event names a dry run would evaluate (dry run only)."
+      "description": "would_events: the event names a dry run would evaluate (dry run only). lease_age_s: age in seconds of the held ticket lease, null when none (omitted when lease_held is false)."
     },
     "problem": {
       "type": "object",

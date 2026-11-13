@@ -447,7 +447,15 @@
           },
           "default": [],
           "maxItems": 256,
-          "description": "Account ids or [\"*\"] (any reporter); empty means only the user's own account."
+          "if": {
+            "contains": {
+              "const": "*"
+            }
+          },
+          "then": {
+            "maxItems": 1
+          },
+          "description": "Account ids or [\"*\"] (any reporter; the reporter rule only, never a comment; [\"*\"] cannot be combined with other elements); empty means only the user's own account."
         },
         "repos": {
           "type": "array",
@@ -671,7 +679,7 @@
             ]
           },
           "uniqueItems": true,
-          "description": "Default [\"project\"] for interactive runs, [] for unattended runs unless repos.<id>.agent.setting_sources opts in; unset means no opt-in."
+          "description": "Default [\"project\"] for interactive runs, [] for unattended runs; the global value applies to interactive runs only: an unattended run uses [] unless repos.<id>.agent.setting_sources opts in; unset means no opt-in."
         },
         "env_allowlist": {
           "type": "array",
@@ -897,7 +905,7 @@
                   ]
                 },
                 "uniqueItems": true,
-                "description": "Default [\"project\"] for interactive runs, [] for unattended runs unless repos.<id>.agent.setting_sources opts in; unset means no opt-in."
+                "description": "Default [\"project\"] for interactive runs, [] for unattended runs; the global value applies to interactive runs only: an unattended run uses [] unless repos.<id>.agent.setting_sources opts in; unset means no opt-in."
               },
               "env_allowlist": {
                 "type": "array",

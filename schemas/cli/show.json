@@ -184,6 +184,17 @@
         "$ref": "../defs.json#/$defs/work_event"
       },
       "maxItems": 20
+    },
+    "lease_age_s": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -221,6 +232,6 @@
     "pending_records",
     "events"
   ],
-  "description": "The work item plus its pending records and the last 20 events (printed fields: pending_records holds the full records, events the last 20).",
+  "description": "The work item plus its pending records and the last 20 events (printed fields: pending_records holds the full records, events the last 20). lease_age_s: seconds since the held ticket lease was taken, null or omitted when none.",
   "title": "show --json"
 }
