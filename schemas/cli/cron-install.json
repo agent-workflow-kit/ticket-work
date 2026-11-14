@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/cron-install.json",
+  "type": "object",
+  "properties": {
+    "installed": {
+      "type": "boolean"
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "sync_interval": {
+      "$ref": "../defs.json#/$defs/cron_interval"
+    },
+    "start_interval": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/cron_interval"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "block": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 4096
+      }
+    },
+    "dry_run": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "installed",
+    "changed",
+    "sync_interval",
+    "start_interval",
+    "block",
+    "dry_run"
+  ],
+  "description": "The crontab block that was (or with --dry-run would be) written.",
+  "title": "cron install --json"
+}

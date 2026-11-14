@@ -1,12 +1,975 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "ticket-work/config",
+  "$id": "ticket-work/config.json",
   "title": "ticket-work config",
+  "description": "Config file (config.yaml plus config.d drop-ins merged). Self-contained: no external $ref. Only the closed scalar list of interface.md Environment variables can be set as TICKET_WORK_<KEY> (nested keys joined with __); structured config and safety settings are config-file only. A site has exactly one board (checked by the loader, JSON Schema cannot express it).",
   "type": "object",
-  "properties": {
-    "hooks": {
-      "type": "object"
+  "additionalProperties": false,
+  "$defs": {
+    "duration": {
+      "type": "string",
+      "pattern": "^[0-9]{1,6}(ms|s|m|h|d|w)$"
+    },
+    "site_name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$",
+      "description": "A config site name, at most 32 characters."
+    },
+    "board_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "confirm": {
+      "enum": [
+        "ask",
+        "auto",
+        "never"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,64}$"
+    },
+    "duration_1m": {
+      "type": "string",
+      "pattern": "^(?:[1-9][0-9]{0,5}(?:m|h|d|w)|(?:[6-9][0-9]|[1-9][0-9]{2,5})s)$",
+      "description": "A duration of at least 1m."
+    },
+    "duration_5m": {
+      "type": "string",
+      "pattern": "^(?:(?:[3-9][0-9]{2}|[1-9][0-9]{3,5})s|(?:[5-9]|[1-9][0-9]{1,5})m|[1-9][0-9]{0,5}[hdw])$",
+      "description": "A duration of at least 5m."
+    },
+    "duration_call": {
+      "type": "string",
+      "pattern": "^(?:(?:[5-9]|[1-9][0-9]{1,2}|1[0-7][0-9]{2}|1800)s|(?:[1-9]|[12][0-9]|30)m)$",
+      "description": "A duration from 5s to 30m."
+    },
+    "account": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "rule_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$"
+    },
+    "status_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "hook_entry": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "timeout": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 600
+            },
+            {
+              "$ref": "#/$defs/duration"
+            }
+          ],
+          "default": 30
+        },
+        "async": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "cmd"
+      ]
+    },
+    "hook_list": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hook_entry"
+      },
+      "default": []
+    },
+    "rule": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "$ref": "#/$defs/status_name"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/status_name"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "confirm": {
+          "$ref": "#/$defs/confirm"
+        },
+        "comment": {
+          "type": "boolean",
+          "default": false
+        },
+        "assign": {
+          "enum": [
+            "me"
+          ],
+          "description": "me only, on any rule: assigns when the ticket is unassigned (none and account ids are a config error)."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "to"
+      ]
+    },
+    "rule_started": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "$ref": "#/$defs/status_name"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/status_name"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "confirm": {
+          "enum": [
+            "ask",
+            "auto"
+          ],
+          "description": "ask or auto; never is a config error (invalid_config) for started."
+        },
+        "comment": {
+          "type": "boolean",
+          "default": false
+        },
+        "assign": {
+          "enum": [
+            "me"
+          ],
+          "description": "me only, on any rule: assigns when the ticket is unassigned (none and account ids are a config error)."
+        },
+        "sprint": {
+          "oneOf": [
+            {
+              "enum": [
+                "open",
+                "next"
+              ]
+            },
+            {
+              "type": "integer",
+              "minimum": 1
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "to",
+        "from"
+      ]
+    },
+    "status_map": {
+      "type": "object",
+      "properties": {
+        "started": {
+          "$ref": "#/$defs/rule_started"
+        },
+        "pr_opened": {
+          "$ref": "#/$defs/rule"
+        },
+        "pr_ready": {
+          "$ref": "#/$defs/rule"
+        },
+        "pr_merged": {
+          "$ref": "#/$defs/rule"
+        },
+        "pr_closed_unmerged": {
+          "$ref": "#/$defs/rule"
+        },
+        "agent_blocked": {
+          "$ref": "#/$defs/rule"
+        },
+        "agent_failed": {
+          "$ref": "#/$defs/rule"
+        },
+        "stopped": {
+          "$ref": "#/$defs/rule"
+        }
+      },
+      "additionalProperties": false,
+      "required": [],
+      "default": {}
+    },
+    "repo_rule": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "project": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "epic": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "issue_type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "additionalProperties": false,
+          "required": []
+        },
+        "repo": {
+          "$ref": "#/$defs/rule_repo_id"
+        },
+        "base": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/@+-]{1,255}$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "match",
+        "repo",
+        "base"
+      ]
+    },
+    "rule_repo_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:/#@+=,-]{1,256}$",
+      "description": "Opaque repository id (never the display string)."
+    },
+    "precondition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "has_estimate"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "not_blocked"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "has_parent"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "status_in"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/status_name"
+              },
+              "minItems": 1,
+              "maxItems": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "values"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "labels_absent"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "minItems": 1,
+              "maxItems": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "values"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "assignee"
+            },
+            "value": {
+              "enum": [
+                "me",
+                "none",
+                "any"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/rule_id"
+            },
+            "check": {
+              "const": "in_sprint"
+            },
+            "value": {
+              "enum": [
+                "open",
+                "any"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "check",
+            "value"
+          ]
+        }
+      ]
+    },
+    "board": {
+      "type": "object",
+      "properties": {
+        "site": {
+          "$ref": "#/$defs/site_name"
+        },
+        "queue_board": {
+          "$ref": "#/$defs/board_name"
+        },
+        "sprint_board": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "The board passed to ticketctl sprint add --board; needed when a site has several boards."
+        },
+        "trusted_authors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/account"
+          },
+          "default": [],
+          "maxItems": 256,
+          "if": {
+            "contains": {
+              "const": "*"
+            }
+          },
+          "then": {
+            "maxItems": 1
+          },
+          "description": "Account ids or [\"*\"] (any reporter; the reporter rule only, never a comment; [\"*\"] cannot be combined with other elements); empty means only the user's own account."
+        },
+        "repos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/repo_rule"
+          },
+          "minItems": 1,
+          "maxItems": 256
+        },
+        "branch": {
+          "type": "object",
+          "properties": {
+            "types": {
+              "type": "object",
+              "properties": {
+                "default": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,19}$",
+                  "default": "feat"
+                }
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,19}$"
+              },
+              "default": {
+                "default": "feat"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": []
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/precondition"
+          },
+          "default": [],
+          "maxItems": 64
+        },
+        "status_map": {
+          "$ref": "#/$defs/status_map"
+        },
+        "link_comment": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "site",
+        "repos"
+      ]
     }
   },
-  "additionalProperties": true
+  "properties": {
+    "me": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/name"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "instance": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,64}$",
+      "description": "Default: the hostname lower-cased, characters outside [A-Za-z0-9._-] replaced by -, cut to 64, host when empty. The store records it at first run and refuses a different value."
+    },
+    "boards": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/board_name"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/board"
+      },
+      "default": {}
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "confirm": {
+          "$ref": "#/$defs/confirm",
+          "default": "ask"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "start": {
+      "type": "object",
+      "properties": {
+        "max_pending": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "scan_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 5,
+          "description": "Claims one run of start --auto may take while refusing candidates."
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "pending": {
+      "type": "object",
+      "properties": {
+        "start_expiry": {
+          "$ref": "#/$defs/duration_1m",
+          "default": "24h"
+        },
+        "expiry": {
+          "$ref": "#/$defs/duration_1m",
+          "default": "7d"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "claim": {
+      "type": "object",
+      "properties": {
+        "ttl": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renew_below": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "orphan_after": {
+          "$ref": "#/$defs/duration_5m",
+          "default": "15m"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "overlap": {
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "reread_open_after": {
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "pr_idle_after": {
+          "$ref": "#/$defs/duration",
+          "default": "14d"
+        },
+        "call_timeout": {
+          "$ref": "#/$defs/duration_call",
+          "default": "120s"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "agent": {
+      "type": "object",
+      "properties": {
+        "skill": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "default": "ticket-work:implement-ticket"
+        },
+        "mode": {
+          "enum": [
+            "interactive",
+            "headless"
+          ],
+          "default": "interactive"
+        },
+        "sandbox": {
+          "enum": [
+            "off",
+            "preferred",
+            "required"
+          ],
+          "default": "off"
+        },
+        "permission_profile": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "setting_sources": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "user",
+              "project",
+              "local"
+            ]
+          },
+          "uniqueItems": true,
+          "description": "Default [\"project\"] for interactive runs, [] for unattended runs; the global value applies to interactive runs only: an unattended run uses [] unless repos.<id>.agent.setting_sources opts in; unset means no opt-in."
+        },
+        "env_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+          },
+          "default": []
+        },
+        "plugin_dirs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "default": []
+        },
+        "model": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timeout": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/duration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "jobs": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "queue": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+          "default": "tickets"
+        },
+        "pass_env": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+          },
+          "default": []
+        },
+        "kill_grace": {
+          "$ref": "#/$defs/duration",
+          "default": "120s"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "teardown": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "restore_on_failure": {
+      "type": "boolean",
+      "default": true
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "work": {
+          "$ref": "#/$defs/duration",
+          "default": "90d"
+        },
+        "pending": {
+          "$ref": "#/$defs/duration",
+          "default": "30d"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "pre-enqueue": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "pre-transition": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "pre-launch": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-link": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-status": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-start-failed": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-pending": {
+          "$ref": "#/$defs/hook_list"
+        },
+        "post-attention": {
+          "$ref": "#/$defs/hook_list"
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "ticketctl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "ticket-queue": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "forgectl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "agent-spawn": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "jobsctl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "wtctl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "additionalProperties": false,
+      "required": []
+    },
+    "repos": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/rule_repo_id"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "object",
+            "properties": {
+              "skill": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "default": "ticket-work:implement-ticket"
+              },
+              "mode": {
+                "enum": [
+                  "interactive",
+                  "headless"
+                ],
+                "default": "interactive"
+              },
+              "sandbox": {
+                "enum": [
+                  "off",
+                  "preferred",
+                  "required"
+                ],
+                "default": "off"
+              },
+              "permission_profile": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "setting_sources": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "user",
+                    "project",
+                    "local"
+                  ]
+                },
+                "uniqueItems": true,
+                "description": "Default [\"project\"] for interactive runs, [] for unattended runs; the global value applies to interactive runs only: an unattended run uses [] unless repos.<id>.agent.setting_sources opts in; unset means no opt-in."
+              },
+              "env_allowlist": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+                },
+                "default": []
+              },
+              "plugin_dirs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "default": []
+              },
+              "model": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "timeout": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/duration"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "additionalProperties": false,
+            "required": []
+          },
+          "cleanup": {
+            "type": "object",
+            "properties": {
+              "teardown": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": []
+          },
+          "restore_on_failure": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [],
+        "description": "Per-repository overrides of agent.* (all keys), cleanup.teardown and restore_on_failure only; takes precedence over environment and global config."
+      },
+      "default": {}
+    }
+  }
 }

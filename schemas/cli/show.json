@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/show.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "../defs.json#/$defs/work_id"
+    },
+    "site": {
+      "$ref": "../defs.json#/$defs/site_name"
+    },
+    "key": {
+      "$ref": "../defs.json#/$defs/key"
+    },
+    "requested_keys": {
+      "$ref": "../defs.json#/$defs/requested_keys"
+    },
+    "board": {
+      "$ref": "../defs.json#/$defs/board_name"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 1024,
+      "x-untrusted": true
+    },
+    "phase": {
+      "$ref": "../defs.json#/$defs/phase"
+    },
+    "needs_attention": {
+      "type": "boolean"
+    },
+    "attention": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/attention_entry"
+      },
+      "maxItems": 32
+    },
+    "repo": {
+      "$ref": "../defs.json#/$defs/repo_id"
+    },
+    "branch": {
+      "$ref": "../defs.json#/$defs/branch_name"
+    },
+    "base": {
+      "$ref": "../defs.json#/$defs/branch_name"
+    },
+    "holder": {
+      "$ref": "../defs.json#/$defs/holder"
+    },
+    "claim": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/claim"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "previous": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/previous"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "started_status": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/status_name"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/work_step"
+      },
+      "maxItems": 16
+    },
+    "job": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/job_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "agent": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/agent_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/link"
+      },
+      "maxItems": 100
+    },
+    "pending": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/pending_id"
+      },
+      "maxItems": 64
+    },
+    "cleanup": {
+      "$ref": "../defs.json#/$defs/cleanup"
+    },
+    "restore_state": {
+      "$ref": "../defs.json#/$defs/restore_state"
+    },
+    "last_report": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/last_report"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_artifact": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/last_artifact"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "rejected_claims": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/rejected_claim"
+      },
+      "maxItems": 20
+    },
+    "merge_wait": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/merge_wait"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "labels": {
+      "$ref": "../defs.json#/$defs/work_labels"
+    },
+    "created": {
+      "$ref": "../defs.json#/$defs/ts"
+    },
+    "updated": {
+      "$ref": "../defs.json#/$defs/ts"
+    },
+    "pending_records": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/pending_record"
+      },
+      "maxItems": 64
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/work_event"
+      },
+      "maxItems": 20
+    },
+    "lease_age_s": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "site",
+    "key",
+    "requested_keys",
+    "board",
+    "title",
+    "phase",
+    "needs_attention",
+    "attention",
+    "repo",
+    "branch",
+    "base",
+    "holder",
+    "claim",
+    "previous",
+    "started_status",
+    "steps",
+    "job",
+    "agent",
+    "links",
+    "pending",
+    "cleanup",
+    "restore_state",
+    "last_report",
+    "last_artifact",
+    "rejected_claims",
+    "merge_wait",
+    "labels",
+    "created",
+    "updated",
+    "pending_records",
+    "events"
+  ],
+  "description": "The work item plus its pending records and the last 20 events (printed fields: pending_records holds the full records, events the last 20). lease_age_s: seconds since the held ticket lease was taken, null or omitted when none.",
+  "title": "show --json"
+}

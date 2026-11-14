@@ -1,33 +1,765 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "ticket-work/log",
+  "$id": "ticket-work/log.json",
   "title": "ticket-work log.jsonl record",
-  "type": "object",
-  "properties": {
-    "ts": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "level": {
-      "type": "string",
-      "enum": [
-        "debug",
-        "info",
-        "warn",
-        "error"
+  "description": "Public operational log, one record per line. No ticket, pull request or model text beyond keys and ids.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "start"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "key": {
+          "$ref": "defs.json#/$defs/key"
+        },
+        "site": {
+          "$ref": "defs.json#/$defs/site_name"
+        },
+        "board": {
+          "$ref": "defs.json#/$defs/board_name"
+        },
+        "outcome": {
+          "enum": [
+            "started",
+            "pending",
+            "refused",
+            "failed",
+            "declined",
+            "dry_run"
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/error_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "key",
+        "site",
+        "board",
+        "outcome",
+        "duration_ms"
       ]
     },
-    "event": {
-      "type": "string"
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "resume"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "outcome": {
+          "enum": [
+            "enqueued",
+            "refused",
+            "failed"
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/error_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "outcome"
+      ]
     },
-    "message": {
-      "type": "string"
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "sync"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "already_running": {
+          "type": "boolean"
+        },
+        "partial": {
+          "type": "boolean"
+        },
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "claims_released": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error_code": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/error_code"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "already_running",
+        "partial",
+        "items",
+        "duration_ms"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "stop"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "outcome": {
+          "enum": [
+            "stopped",
+            "pending",
+            "refused"
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/error_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "outcome"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "link"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "pr_id": {
+          "$ref": "defs.json#/$defs/pr_id"
+        },
+        "tier": {
+          "$ref": "defs.json#/$defs/tier"
+        },
+        "link_state": {
+          "$ref": "defs.json#/$defs/link_state"
+        },
+        "change": {
+          "enum": [
+            "linked",
+            "promoted",
+            "candidate",
+            "unlinked",
+            "missing"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "pr_id",
+        "change"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "status_event"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "name": {
+          "$ref": "defs.json#/$defs/event_name_ext"
+        },
+        "event_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outcome": {
+          "$ref": "defs.json#/$defs/event_outcome"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "name",
+        "event_key",
+        "outcome"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "pending"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "pending_id": {
+          "$ref": "defs.json#/$defs/pending_id"
+        },
+        "action": {
+          "$ref": "defs.json#/$defs/pending_action"
+        },
+        "status": {
+          "$ref": "defs.json#/$defs/pending_status"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "pending_id",
+        "action",
+        "status"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "restore"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "restore_state": {
+          "$ref": "defs.json#/$defs/restore_state"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "restore_state"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "teardown"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "outcome": {
+          "enum": [
+            "done",
+            "refused",
+            "skipped"
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "outcome"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "attention"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "reason": {
+          "$ref": "defs.json#/$defs/attention_reason"
+        },
+        "state": {
+          "enum": [
+            "set",
+            "cleared"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "reason",
+        "state"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "job"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "outcome": {
+          "enum": [
+            "done",
+            "blocked",
+            "needs-input",
+            "failed",
+            "held",
+            "vetoed",
+            "refused"
+          ]
+        },
+        "exit": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "work_id",
+        "outcome",
+        "exit"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "hook"
+        },
+        "v": {
+          "const": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ts": {
+          "$ref": "defs.json#/$defs/ts"
+        },
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "actor": {
+          "$ref": "defs.json#/$defs/actor"
+        },
+        "decision_ids": {
+          "$ref": "defs.json#/$defs/decision_ids"
+        },
+        "hook": {
+          "$ref": "defs.json#/$defs/hook_name"
+        },
+        "event_id": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/event_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timed_out": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "v",
+        "seq",
+        "ts",
+        "actor",
+        "decision_ids",
+        "hook",
+        "exit"
+      ]
     }
-  },
-  "required": [
-    "ts",
-    "level",
-    "event"
-  ],
-  "additionalProperties": true
+  ]
 }

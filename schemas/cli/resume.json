@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/resume.json",
+  "type": "object",
+  "properties": {
+    "work": {
+      "$ref": "../defs.json#/$defs/work_item"
+    },
+    "mode": {
+      "enum": [
+        "interactive",
+        "headless"
+      ]
+    },
+    "job": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/job_result"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pending": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/pending_record"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "warnings": {
+      "$ref": "../defs.json#/$defs/warnings"
+    },
+    "dry_run": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "work",
+    "mode",
+    "job",
+    "pending",
+    "warnings",
+    "dry_run"
+  ],
+  "description": "See interface.md Objects.",
+  "title": "resume --json"
+}

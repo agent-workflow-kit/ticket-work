@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/unlink.json",
+  "type": "object",
+  "properties": {
+    "work": {
+      "$ref": "../defs.json#/$defs/work_id"
+    },
+    "pr_id": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/pr_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "ignored": {
+      "type": "boolean"
+    },
+    "dry_run": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "work",
+    "pr_id",
+    "changed",
+    "ignored",
+    "dry_run"
+  ],
+  "description": "changed is false for an idempotent repeat.",
+  "title": "unlink --json"
+}

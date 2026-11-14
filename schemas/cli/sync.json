@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/sync.json",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/sync_item"
+      }
+    },
+    "claims_released": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "already_running": {
+      "type": "boolean"
+    },
+    "rerun": {
+      "type": "boolean"
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "dry_run": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/sync_error"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "claims_released",
+    "already_running",
+    "rerun",
+    "partial",
+    "dry_run",
+    "errors"
+  ],
+  "description": "Sync report. rerun is true when sync_rerun made the run repeat its steps; dry_run is true for sync --dry-run, where each item entry also lists would_events.",
+  "title": "sync --json"
+}

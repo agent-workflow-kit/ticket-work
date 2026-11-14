@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/confirm.json",
+  "type": "object",
+  "properties": {
+    "pending": {
+      "$ref": "../defs.json#/$defs/pending_record"
+    },
+    "work": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/work_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "applied": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/applied_step"
+      },
+      "maxItems": 64
+    },
+    "job": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/job_result"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "new_pending": {
+      "oneOf": [
+        {
+          "$ref": "../defs.json#/$defs/pending_record"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "warnings": {
+      "$ref": "../defs.json#/$defs/warnings"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "pending",
+    "work",
+    "applied",
+    "job",
+    "new_pending",
+    "warnings"
+  ],
+  "description": "new_pending is set on exit 13 (stale plan or a hook escalated again).",
+  "title": "confirm --json"
+}

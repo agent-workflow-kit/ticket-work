@@ -1,2 +1,137 @@
-# Example config for ticket-work. Location: ~/.config/ticket-work/config.yaml (drop-ins: config.d/*.yaml). Keys are defined in docs/interface.md once designed.
-hooks: {}
+# Example config for ticket-work.
+# Location: ~/.config/ticket-work/config.yaml (respects XDG_CONFIG_HOME); drop-ins in config.d/*.yaml merge in
+# lexical order after it. Every key below is shown with its default unless noted.
+# Durations are strings such as 30m, 24h, 7d (units ms, s, m, h, d, w).
+# Environment: only a closed list of non-safety scalars can be set as TICKET_WORK_<KEY>, nested keys joined with __
+# (me.name, instance, jobs.kill_grace, sync.overlap, sync.reread_open_after, sync.pr_idle_after, claim.ttl,
+# claim.renew_below, pending.start_expiry, pending.expiry, retention.work, retention.pending). Everything else
+# (including jobs.queue, claim.orphan_after, start.* and sync.call_timeout) is config-file only.
+# Status names, repository ids and sites below are placeholders: ticket-work ships no status names.
+
+me:
+  name: sam                       # actor name; default: the OS user name
+instance: laptop                  # part of the claim holder ticket-work:<instance>:<store id>, 1 to 64 characters of [A-Za-z0-9._-]; default: the lower-cased hostname with characters outside [A-Za-z0-9._-] replaced by -, cut to 64
+
+# A board maps a ticketctl site to repositories and a status map. A site has exactly one board.
+# A ticket-work board is bound to a ticket-queue board by queue_board, never by name.
+boards:
+  main:
+    site: example                 # required: the ticketctl site (one board per site)
+    queue_board: main             # optional: the ticket-queue board whose tickets this board takes
+    # sprint_board: "12"          # optional: the board passed to ticketctl sprint add --board; needed when the site has several boards
+    trusted_authors: []           # account ids whose unedited comments reach the prompt and whose tickets may start unattended; ["*"] allows any reporter (never any comment) and cannot be combined with other elements
+    repos:                        # required: ordered rules, the first match wins; an empty match is the board default
+      - match:                    # keys: label, project, epic, issue_type (all optional, ANDed)
+          issue_type: Bug
+        repo: host/org/repo       # a repository id that wtctl locate can resolve
+        base: main
+      - match: {}
+        repo: host/org/repo
+        base: main
+    branch:
+      types:                      # branch type by issue type; default: {default: feat}
+        default: feat
+        Bug: fix
+    preconditions:                # named checks from a closed set; default: []
+      - {name: estimated, check: has_estimate}
+      - {name: not-blocked, check: not_blocked}
+      - {name: has-parent, check: has_parent}
+      - {name: startable, check: status_in, values: ["To Do", "Ready"]}
+      - {name: mine-or-free, check: assignee, value: me}       # me, none or any
+      - {name: in-sprint, check: in_sprint, value: open}       # open or any
+      - {name: not-held, check: labels_absent, values: ["on-hold"]}
+    status_map:                   # event rules; default: {} (started is required to start a ticket)
+      started:                    # events: started, pr_opened, pr_ready, pr_merged, pr_closed_unmerged, agent_blocked, agent_failed, stopped
+        to: In Progress           # required: target status name
+        from: ["To Do", "Ready"]  # required for started: the statuses the live ticket must be in
+        assign: me                # me only (any rule): assigns when the ticket is unassigned
+        sprint: open              # started only: open, next or a numeric sprint id
+        confirm: ask              # ask (default; falls back to defaults.confirm) or auto (never is a config error for started; other events also accept never)
+        comment: false            # true posts one fixed-text comment per event
+      pr_opened:
+        to: In Review
+        from: ["In Progress"]
+      pr_merged:
+        to: Done
+        resolution: Done          # required when the target is a done status
+        confirm: ask
+    link_comment: false           # comment on pr_opened (applies to the pr_opened event)
+
+defaults:
+  confirm: ask                    # default for a rule's confirm: ask, auto or never
+
+start:
+  max_pending: 1                  # unresolved pending starts allowed under start --auto (the gate compares the open count with it)
+  scan_limit: 5                   # claims one run of start --auto may take while refusing candidates (1 to 20)
+
+pending:
+  start_expiry: 24h               # pending start lifetime
+  expiry: 7d                      # lifetime of other pending confirmations
+
+claim:
+  ttl: null                       # passed with --ttl when set; default: ticket-queue's own default
+  renew_below: 0.5                # renew when this fraction of the TTL remains
+  orphan_after: 15m               # at least 5m; release or repair grace: a claim of this store with no work item, or a start stuck in applying
+
+sync:
+  overlap: 1h                     # discovery watermark overlap
+  reread_open_after: 1h           # re-read open pull requests at least this often
+  pr_idle_after: 14d              # pr_idle threshold
+  call_timeout: 120s              # timeout of every lower call (5s to 30m); on expiry the child process is stopped and the call fails transient
+
+agent:
+  skill: ticket-work:implement-ticket   # the implement-ticket slot skill
+  mode: interactive               # interactive or headless
+  sandbox: "off"                  # off, preferred or required (quoted: a bare off is a YAML boolean)
+  permission_profile: null        # path; replaces the bundled permission profile
+  # setting_sources: [project]   # Claude setting sources: user, project, local; the global value applies to interactive runs only (default [project]); an unattended run uses [] unless repos.<id>.agent.setting_sources is set
+  env_allowlist: []               # names added to the fixed base of --env-allowlist-only (jobs.pass_env names are never forwarded to the agent)
+  plugin_dirs: []                 # extra plugin directories
+  model: null                     # passed with --model when set
+  timeout: null                   # passed as --timeout when set; default none (headless runs are bounded by claude-session's kind default)
+
+jobs:
+  enabled: true                   # use jobsctl (required for start --auto)
+  queue: tickets                  # jobsctl queue
+  pass_env: []                    # --pass-env names for the job's own tool calls (credentials come from jobsctl's env file); never forwarded to the agent or hooks
+  # pass_env: [TMUX, SSH_AUTH_SOCK]   # an interactive launch from a job may need these (see validate)
+  kill_grace: 120s                # --kill-grace
+
+cleanup:
+  teardown: true                  # tear down after pr_merged
+
+restore_on_failure: true          # run the restore flow when a start fails after a step landed
+
+retention:
+  work: 90d                       # prune age for finished work items
+  pending: 30d                    # prune age for resolved pending records
+
+# Hook lists (design guide section 8). Each entry: cmd, timeout (seconds or duration, default 30), async (default false).
+# Hook names: pre-enqueue, pre-transition, pre-launch, post-link, post-status, post-start-failed, post-pending, post-attention.
+hooks:
+  pre-enqueue: []
+  pre-transition: []
+  pre-launch: []
+  post-link: []
+  post-status: []
+  post-start-failed: []
+  post-pending: []
+  post-attention: []
+
+# Executable path per sibling tool; default: the tool's own name on PATH.
+tools:
+  ticketctl: ticketctl
+  ticket-queue: ticket-queue
+  forgectl: forgectl
+  agent-spawn: agent-spawn
+  jobsctl: jobsctl
+  wtctl: wtctl
+
+# Per-repository overrides, keyed by repository id (agent.*, cleanup.teardown and restore_on_failure only); they take precedence over the environment and the global config.
+repos:
+  host/org/repo:
+    agent:
+      mode: interactive
+    cleanup:
+      teardown: true
+    restore_on_failure: true

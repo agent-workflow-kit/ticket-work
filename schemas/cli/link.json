@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/link.json",
+  "type": "object",
+  "properties": {
+    "work": {
+      "$ref": "../defs.json#/$defs/work_id"
+    },
+    "link": {
+      "$ref": "../defs.json#/$defs/link"
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "promoted": {
+      "type": "boolean"
+    },
+    "applied": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/applied_step"
+      },
+      "maxItems": 16
+    },
+    "dry_run": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "work",
+    "link",
+    "changed",
+    "promoted",
+    "applied",
+    "dry_run"
+  ],
+  "description": "changed is false for an idempotent repeat.",
+  "title": "link --json"
+}

@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ticket-work/cli/validate.json",
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "probe": {
+      "type": "boolean"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "../defs.json#/$defs/tool_name"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "version": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minimum": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "found",
+          "version",
+          "minimum"
+        ]
+      }
+    },
+    "boards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "../defs.json#/$defs/board_name"
+          },
+          "site": {
+            "$ref": "../defs.json#/$defs/site_name"
+          },
+          "repos_resolved": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "site",
+          "repos_resolved"
+        ]
+      }
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/problem"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "../defs.json#/$defs/note"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "probe",
+    "tools",
+    "boards",
+    "problems",
+    "warnings"
+  ],
+  "description": "Exit 0 output (no problems). Exit 12 prints the error envelope with details.problems.",
+  "title": "validate --json"
+}

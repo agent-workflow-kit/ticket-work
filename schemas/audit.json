@@ -1,47 +1,164 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "ticket-work/audit",
+  "$id": "ticket-work/audit.json",
   "title": "ticket-work audit.jsonl record",
-  "description": "Audit record for ticket-work. Whether this tool writes audit records is decided in its design session (architecture §14).",
+  "description": "Public, append-only. One record pair (attempted, then the outcome) per external action, sharing attempt_id. failed: a definite refusal or error; partial: a failure after an earlier step landed; unknown: a request that may have been sent with no answer (changed null). No ticket text. Closed for the producer; a consumer tolerates unknown properties.",
   "type": "object",
   "properties": {
+    "v": {
+      "const": 1
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1
+    },
     "ts": {
-      "type": "string",
-      "format": "date-time"
+      "$ref": "defs.json#/$defs/ts"
+    },
+    "attempt_id": {
+      "$ref": "defs.json#/$defs/attempt_id"
     },
     "actor": {
-      "type": "string"
+      "$ref": "defs.json#/$defs/actor"
     },
     "decision_id": {
-      "oneOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      ]
+      "$ref": "defs.json#/$defs/decision_ids"
     },
     "target": {
-      "type": "string"
+      "$ref": "defs.json#/$defs/work_id"
     },
     "action": {
-      "type": "string"
+      "enum": [
+        "transition",
+        "sprint_add",
+        "comment",
+        "restore",
+        "link",
+        "unlink",
+        "launch",
+        "resume",
+        "teardown",
+        "pending_confirm",
+        "pending_reject",
+        "pending_expire"
+      ]
     },
     "inputs": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "work_id": {
+          "$ref": "defs.json#/$defs/work_id"
+        },
+        "event": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/event_name_ext"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z_]{1,64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_sha256": {
+          "oneOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "defs.json#/$defs/sha256"
+                },
+                {
+                  "$ref": "defs.json#/$defs/plan_hashes"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pr_id": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/pr_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pending_id": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/pending_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lower_attempt_id": {
+          "oneOf": [
+            {
+              "$ref": "defs.json#/$defs/attempt_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": []
     },
-    "result": {}
+    "result": {
+      "enum": [
+        "attempted",
+        "ok",
+        "failed",
+        "partial",
+        "unknown"
+      ]
+    },
+    "changed": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "reason": {
+      "oneOf": [
+        {
+          "$ref": "defs.json#/$defs/error_reason"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
   },
+  "additionalProperties": false,
   "required": [
+    "v",
+    "seq",
     "ts",
+    "attempt_id",
     "actor",
+    "decision_id",
     "target",
     "action",
-    "result"
-  ],
-  "additionalProperties": true
+    "inputs",
+    "result",
+    "changed"
+  ]
 }
